@@ -62,7 +62,7 @@ BlockSolver<Traits>::BlockSolver(LinearSolverType* linearSolver) :
 }
 
 template <typename Traits>
-void BlockSolver<Traits>::resize(int* blockPoseIndices, int numPoseBlocks, 
+void BlockSolver<Traits>::resize(int* blockPoseIndices, int numPoseBlocks,
               int* blockLandmarkIndices, int numLandmarkBlocks,
               int s)
 {
@@ -236,8 +236,8 @@ bool BlockSolver<Traits>::buildStructure(bool zeroBlocks)
           if (zeroBlocks)
             m->setZero();
           e->mapHessianMemory(m->data(), viIdx, vjIdx, false);
-        } else { 
-          if (v1->marginalized()){ 
+        } else {
+          if (v1->marginalized()){
             PoseLandmarkMatrixType* m = _Hpl->block(v2->hessianIndex(),v1->hessianIndex()-_numPoses, true);
             if (zeroBlocks)
               m->setZero();
@@ -339,7 +339,7 @@ bool BlockSolver<Traits>::updateStructure(const std::vector<HyperGraph::Vertex*>
         if (! v1->marginalized() && !v2->marginalized()) {
           PoseMatrixType* m = _Hpp->block(ind1, ind2, true);
           e->mapHessianMemory(m->data(), viIdx, vjIdx, transposedBlock);
-        } else { 
+        } else {
           std::cerr << __PRETTY_FUNCTION__ << ": not supported" << std::endl;
         }
       }
@@ -352,7 +352,6 @@ bool BlockSolver<Traits>::updateStructure(const std::vector<HyperGraph::Vertex*>
 
 template <typename Traits>
 bool BlockSolver<Traits>::solve(){
-  //cerr << __PRETTY_FUNCTION__ << endl;
   if (! _doSchur){
     double t=get_monotonic_time();
     bool ok = _linearSolver->solve(*_Hpp, _x, _b);
@@ -363,7 +362,6 @@ bool BlockSolver<Traits>::solve(){
     }
     return ok;
   }
-
   // schur thing
 
   // backup the coefficient matrix
@@ -372,6 +370,9 @@ bool BlockSolver<Traits>::solve(){
   // _Hschur = _Hpp, but keeping the pattern of _Hschur
   _Hschur->clear();
   _Hpp->add(_Hschur);
+  // printf("Hpp: %d x %d\n", _Hpp->rows(), _Hpp->cols());
+  // printf("Hll: %d x %d\n", _Hll->rows(), _Hll->cols());
+  // printf("Hpl: %d x %d\n", _Hpl->rows(), _Hpl->cols());
 
   //_DInvSchur->clear();
   memset (_coefficients, 0, _sizePoses*sizeof(double));
@@ -420,7 +421,7 @@ bool BlockSolver<Traits>::solve(){
       for (; it_inner != landmarkColumn.end(); ++it_inner) {
         int i2 = it_inner->row;
         const PoseLandmarkMatrixType* Bj = it_inner->block;
-        assert(Bj); 
+        assert(Bj);
         while (targetColumnIt->row < i2 /*&& targetColumnIt != _HschurTransposedCCS->blockCols()[i1].end()*/)
           ++targetColumnIt;
         assert(targetColumnIt != _HschurTransposedCCS->blockCols()[i1].end() && targetColumnIt->row == i2 && "invalid iterator, something wrong with the matrix structure");
@@ -526,6 +527,7 @@ bool BlockSolver<Traits>::buildSystem()
   JacobianWorkspace jacobianWorkspace = _optimizer->jacobianWorkspace();
 # pragma omp parallel for default (shared) firstprivate(jacobianWorkspace) if (_optimizer->activeEdges().size() > 100)
 # endif
+  // printf("Number of edges: %d\n", static_cast<int>(_optimizer->activeEdges().size()));
   for (int k = 0; k < static_cast<int>(_optimizer->activeEdges().size()); ++k) {
     OptimizableGraph::Edge* e = _optimizer->activeEdges()[k];
     e->linearizeOplus(jacobianWorkspace); // jacobian of the nodes' oplus (manifold)

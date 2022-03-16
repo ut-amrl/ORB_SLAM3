@@ -54,13 +54,13 @@ namespace g2o {
   SparseBlockMatrix<MatrixType>::SparseBlockMatrix( const int * rbi, const int* cbi, int rb, int cb, bool hasStorage):
     _rowBlockIndices(rbi,rbi+rb),
     _colBlockIndices(cbi,cbi+cb),
-    _blockCols(cb), _hasStorage(hasStorage) 
+    _blockCols(cb), _hasStorage(hasStorage)
   {
   }
 
   template <class MatrixType>
   SparseBlockMatrix<MatrixType>::SparseBlockMatrix( ):
-    _blockCols(0), _hasStorage(true) 
+    _blockCols(0), _hasStorage(true)
   {
   }
 
@@ -299,8 +299,8 @@ namespace g2o {
 #   endif
     for (int i=0; i < static_cast<int>(_blockCols.size()); ++i){
       int destOffset = colBaseOfBlock(i);
-      for (typename SparseBlockMatrix<MatrixType>::IntBlockMap::const_iterator it=_blockCols[i].begin(); 
-          it!=_blockCols[i].end(); 
+      for (typename SparseBlockMatrix<MatrixType>::IntBlockMap::const_iterator it=_blockCols[i].begin();
+          it!=_blockCols[i].end();
           ++it){
         const typename SparseBlockMatrix<MatrixType>::SparseMatrixBlock* a=it->second;
         int srcOffset = rowBaseOfBlock(it->first);
@@ -308,7 +308,7 @@ namespace g2o {
         internal::atxpy(*a, srcVec, srcOffset, destVec, destOffset);
       }
     }
-    
+
   }
 
   template <class MatrixType>
@@ -434,7 +434,7 @@ namespace g2o {
     for (size_t i=0; i<n; ++i){
       //cerr << PVAR(i) <<  " ";
       int pi=pinv[i];
-      for (typename SparseBlockMatrix<MatrixType>::IntBlockMap::const_iterator it=_blockCols[i].begin(); 
+      for (typename SparseBlockMatrix<MatrixType>::IntBlockMap::const_iterator it=_blockCols[i].begin();
           it!=_blockCols[i].end(); ++it){
         int pj=pinv[it->first];
 
@@ -455,10 +455,10 @@ namespace g2o {
         }
       }
       //cerr << endl;
-      // within each row, 
+      // within each row,
     }
     return true;
-    
+
   }
 
   template <class MatrixType>
@@ -549,7 +549,7 @@ namespace g2o {
   {
     std::string name = filename;
     std::string::size_type lastDot = name.find_last_of('.');
-    if (lastDot != std::string::npos) 
+    if (lastDot != std::string::npos)
       name = name.substr(0, lastDot);
 
     std::vector<TripletEntry> entries;
@@ -587,6 +587,36 @@ namespace g2o {
     }
     return fout.good();
   }
+
+  template <class MatrixType>
+  bool SparseBlockMatrix<MatrixType>::writeBlockSparseMatrix(
+      const char* filename) const {
+    std::ofstream fout(filename);
+    fout << rows() << ", " << cols() << std::endl;
+    fout << std::setprecision(9) << std::fixed;
+
+    for (size_t i = 0; i<_blockCols.size(); ++i) {
+      const int& c = i;
+      for (auto it=_blockCols[i].begin(); it!=_blockCols[i].end(); ++it) {
+        const int& r = it->first;
+        const int block_start_row = rowBaseOfBlock(r);
+        const int block_start_col = colBaseOfBlock(c);
+        const MatrixType& m = *(it->second);
+        fout << block_start_row << ", "
+             << block_start_col << ", "
+             << m.rows() << ", "
+             << m.cols();
+        for (int cc = 0; cc < m.cols(); ++cc) {
+          for (int rr = 0; rr < m.rows(); ++rr) {
+            fout << ", " << m(rr, cc);
+          }
+        }
+        fout << std::endl;
+      }
+    }
+    return fout.good();
+  }
+
 
   template <class MatrixType>
   int SparseBlockMatrix<MatrixType>::fillSparseBlockMatrixCCS(SparseBlockMatrixCCS<MatrixType>& blockCCS) const

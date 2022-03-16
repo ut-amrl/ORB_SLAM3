@@ -60,6 +60,7 @@ namespace g2o {
 
   OptimizationAlgorithm::SolverResult OptimizationAlgorithmLevenberg::solve(int iteration, bool online)
   {
+    // printf("OptimizationAlgorithmLevenberg::solve\n");
     assert(_optimizer && "_optimizer not set");
     assert(_solver->optimizer() == _optimizer && "underlying linear solver operates on different graph");
 

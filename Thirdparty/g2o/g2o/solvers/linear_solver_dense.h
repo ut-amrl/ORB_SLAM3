@@ -66,7 +66,7 @@ namespace g2o {
       {
         int n = A.cols();
         int m = A.cols();
-
+        // printf("Solve LHS %d x %d\n", A.rows(), A.cols());
         Eigen::MatrixXd& H = _H;
         if (H.cols() != n) {
           H.resize(n, m);

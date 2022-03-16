@@ -29,6 +29,10 @@
 #include <cstring>
 #include <algorithm>
 
+#include "gflags/gflags.h"
+
+DEFINE_string(matrix_save_dir, "", "directory to save the matrices");
+
 namespace g2o {
 
 Solver::Solver() :

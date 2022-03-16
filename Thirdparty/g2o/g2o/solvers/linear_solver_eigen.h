@@ -30,6 +30,8 @@
 #include <Eigen/Sparse>
 #include <Eigen/SparseCholesky>
 
+#include "gflags/gflags.h"
+
 #include "../core/linear_solver.h"
 #include "../core/batch_stats.h"
 #include "../stuff/timeutil.h"
@@ -38,6 +40,8 @@
 
 #include <iostream>
 #include <vector>
+
+DECLARE_string(matrix_save_dir);
 
 namespace g2o {
 
@@ -91,8 +95,30 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
       return true;
     }
 
+    // Save A and b matrices to file.
+    void SaveProblem(const SparseBlockMatrix<MatrixType>& A, double* b) {
+      if (FLAGS_matrix_save_dir.empty()) return;
+      static int problem_id = 0;
+      char filename_a[256];
+      char filename_b[256];
+      sprintf(filename_a, "%s/problem_%05d_a.txt",
+          FLAGS_matrix_save_dir.c_str(), problem_id);
+      sprintf(filename_b, "%s/problem_%05d_b.txt",
+          FLAGS_matrix_save_dir.c_str(), problem_id);
+      A.writeBlockSparseMatrix(filename_a);
+      std::ofstream ofs(filename_b);
+      if (!ofs.is_open())
+        return;
+      for (int i = 0; i < A.cols(); i++) {
+        ofs << b[i] << std::endl;
+      }
+      ++problem_id;
+    }
+
     bool solve(const SparseBlockMatrix<MatrixType>& A, double* x, double* b)
     {
+      printf("LinearSolverEigen::solve() A:%dx%d\n", A.rows(), A.cols());
+      SaveProblem(A, b);
       if (_init)
         _sparseMatrix.resize(A.rows(), A.cols());
       fillSparseMatrix(A, !_init);

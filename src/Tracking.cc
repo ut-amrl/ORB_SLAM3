@@ -2853,6 +2853,7 @@ void Tracking::UpdateLastFrame()
 
 bool Tracking::TrackWithMotionModel()
 {
+    // printf("TrackWithMotionModel\n");
     ORBmatcher matcher(0.9,true);
 
     // Update last frame pose according to its reference keyframe

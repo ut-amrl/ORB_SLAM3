@@ -170,7 +170,7 @@ target_link_libraries(stereo_kitti ${PROJECT_NAME})
 
 add_executable(stereo_euroc
         Examples/Stereo/stereo_euroc.cc)
-target_link_libraries(stereo_euroc ${PROJECT_NAME})
+target_link_libraries(stereo_euroc gflags ${PROJECT_NAME})
 
 add_executable(stereo_tum_vi
         Examples/Stereo/stereo_tum_vi.cc)

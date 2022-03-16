@@ -353,6 +353,7 @@ namespace g2o{
 
   int SparseOptimizer::optimize(int iterations, bool online)
   {
+    // printf("SparsOptimizer::optimize(%d, %d)\n", iterations, online);
     if (_ivMap.size() == 0) {
       cerr << __PRETTY_FUNCTION__ << ": 0 vertices to optimize, maybe forgot to call initializeOptimization()" << endl;
       return -1;
