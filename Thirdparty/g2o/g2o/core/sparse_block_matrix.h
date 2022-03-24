@@ -194,6 +194,9 @@ class SparseBlockMatrix {
 
     /**
      * write the content of this matrix in the following format:
+     * # name: matrix_name
+     * # rows: number of rows
+     * # columns: number of columns
      * num_rows, num_cols
      * block_start_row, block_start_col, block_size_row, block_size_col, blockdata...
      */

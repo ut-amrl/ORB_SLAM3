@@ -591,7 +591,13 @@ namespace g2o {
   template <class MatrixType>
   bool SparseBlockMatrix<MatrixType>::writeBlockSparseMatrix(
       const char* filename) const {
+    std::string name = filename;
+    std::string::size_type lastDot = name.find_last_of('.');
+    if (lastDot != std::string::npos) name = name.substr(0, lastDot);
     std::ofstream fout(filename);
+    fout << "# name: " << name << std::endl;
+    fout << "# rows: " << rows() << std::endl;
+    fout << "# columns: " << cols() << std::endl;
     fout << rows() << ", " << cols() << std::endl;
     fout << std::setprecision(9) << std::fixed;
 
