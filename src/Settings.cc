@@ -558,11 +558,11 @@ namespace ORB_SLAM3 {
             else{
                 output << "Kannala-Brandt";
             }
-            output << "" << ": [";
-            for(size_t i = 0; i < settings.originalCalib2_->size(); i++){
-                output << " " << settings.originalCalib2_->getParameter(i);
-            }
-            output << " ]" << endl;
+//            output << "" << ": [";
+//            for(size_t i = 0; i < settings.originalCalib2_->size(); i++){
+//                output << " " << settings.originalCalib2_->getParameter(i);
+//            }
+//            output << " ]" << endl;
 
             if(!settings.vPinHoleDistorsion2_.empty()){
                 output << "\t-Camera 1 distortion parameters: [ ";

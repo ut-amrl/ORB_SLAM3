@@ -24,6 +24,8 @@
 #include <thread>
 #include <cstdlib>
 
+#include "../../../include/Converter.h"
+
 using namespace std;
 
 namespace ORB_SLAM3
@@ -402,7 +404,7 @@ Plane* ViewerAR::DetectPlane(const cv::Mat Tcw, const std::vector<MapPoint*> &vM
         {
             if(pMP->Observations()>5)
             {
-                vPoints.push_back(pMP->GetWorldPos());
+                vPoints.push_back(ORB_SLAM3::Converter::toCvMat(pMP->GetWorldPos()));
                 vPointMP.push_back(pMP);
             }
         }
@@ -527,7 +529,7 @@ void Plane::Recompute()
         MapPoint* pMP = mvMPs[i];
         if(!pMP->isBad())
         {
-            cv::Mat Xw = pMP->GetWorldPos();
+            cv::Mat Xw = ORB_SLAM3::Converter::toCvMat(pMP->GetWorldPos());
             o+=Xw;
             A.row(nPoints).colRange(0,3) = Xw.t();
             nPoints++;
