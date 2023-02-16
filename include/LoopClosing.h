@@ -227,8 +227,8 @@ protected:
 
 
 
-    vector<double> vdPR_CurrentTime;
-    vector<double> vdPR_MatchedTime;
+    vector<Timestamp> vdPR_CurrentTime;
+    vector<Timestamp> vdPR_MatchedTime;
     vector<int> vnPR_TypeRecogn;
 
     //DEBUG

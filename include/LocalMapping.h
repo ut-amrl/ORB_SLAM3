@@ -77,7 +77,7 @@ public:
     }
 
     bool IsInitializing();
-    double GetCurrKFTime();
+    Timestamp GetCurrKFTime();
     KeyFrame* GetCurrKF();
 
     std::mutex mMutexImuInit;
@@ -93,7 +93,7 @@ public:
     unsigned int mInitSect;
     unsigned int mIdxInit;
     unsigned int mnKFs;
-    double mFirstTs;
+    Timestamp mFirstTs = std::make_pair(0, 0);
     int mnMatchesInliers;
 
     // For debugging (erase in normal mode)

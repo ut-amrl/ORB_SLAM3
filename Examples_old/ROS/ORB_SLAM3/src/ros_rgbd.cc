@@ -31,6 +31,7 @@
 #include<opencv2/core/core.hpp>
 
 #include"../../../include/System.h"
+#include <Timestamp.h>
 
 using namespace std;
 
@@ -106,7 +107,7 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
         ROS_ERROR("cv_bridge exception: %s", e.what());
         return;
     }
-    mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec());
+    mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,std::make_pair(cv_ptrRGB->header.stamp.sec, cv_ptrRGB->header.stamp.nsec));
 }
 
 

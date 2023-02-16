@@ -24,6 +24,7 @@
 #include<opencv2/core/core.hpp>
 
 #include<System.h>
+#include <TimestampConversion.h>
 
 using namespace std;
 
@@ -137,7 +138,7 @@ int main(int argc, char **argv)
 
             // Pass the image to the SLAM system
             // cout << "tframe = " << tframe << endl;
-            SLAM.TrackMonocular(im,tframe); // TODO change to monocular_inertial
+            SLAM.TrackMonocular(im,ORB_SLAM3::toTimestampPair(tframe)); // TODO change to monocular_inertial
 
     #ifdef COMPILEDWITHC11
             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();

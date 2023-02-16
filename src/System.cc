@@ -241,7 +241,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
 }
 
-Sophus::SE3f System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp, const vector<IMU::Point>& vImuMeas, string filename)
+Sophus::SE3f System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const Timestamp &timestamp, const vector<IMU::Point>& vImuMeas, string filename)
 {
     if(mSensor!=STEREO && mSensor!=IMU_STEREO)
     {
@@ -325,7 +325,7 @@ Sophus::SE3f System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, 
     return Tcw;
 }
 
-Sophus::SE3f System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const double &timestamp, const vector<IMU::Point>& vImuMeas, string filename)
+Sophus::SE3f System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const Timestamp &timestamp, const vector<IMU::Point>& vImuMeas, string filename)
 {
     if(mSensor!=RGBD  && mSensor!=IMU_RGBD)
     {
@@ -396,7 +396,7 @@ Sophus::SE3f System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const
     return Tcw;
 }
 
-Sophus::SE3f System::TrackMonocular(const cv::Mat &im, const double &timestamp, const vector<IMU::Point>& vImuMeas, string filename)
+Sophus::SE3f System::TrackMonocular(const cv::Mat &im, const Timestamp &timestamp, const vector<IMU::Point>& vImuMeas, string filename)
 {
 
     {
@@ -548,7 +548,10 @@ void System::Shutdown()
     if(!mStrSaveAtlasToFile.empty())
     {
         Verbose::PrintMess("Atlas saving to file " + mStrSaveAtlasToFile, Verbose::VERBOSITY_NORMAL);
-        SaveAtlas(FileType::BINARY_FILE);
+        string pathSaveFileName = "./";
+        pathSaveFileName = pathSaveFileName.append(mStrSaveAtlasToFile);
+        pathSaveFileName = pathSaveFileName.append(".osa");
+        SaveAtlas(pathSaveFileName, FileType::BINARY_FILE);
     }
 
     /*if(mpViewer)
@@ -564,6 +567,68 @@ void System::Shutdown()
 bool System::isShutDown() {
     unique_lock<mutex> lock(mMutexReset);
     return mbShutDown;
+}
+
+void System::MarkNewTrajectoryStart() {
+    // TODO
+}
+
+void System::SaveLatestTrajectoryOVSlam(const std::string &out_file_name) {
+    cout << endl << "Saving camera trajectory to " << out_file_name << " ..." << endl;
+    if(mSensor==MONOCULAR)
+    {
+        cerr << "ERROR: SaveTrajectoryTUM cannot be used for monocular." << endl;
+        return;
+    }
+
+    vector<KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
+    sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
+
+    // Transform all keyframes so that the first keyframe is at the origin.
+    // After a loop closure the first keyframe might not be at the origin.
+    Sophus::SE3f Two = vpKFs[0]->GetPoseInverse();
+
+    ofstream f;
+    f.open(out_file_name.c_str());
+    f << fixed;
+
+    // Frame pose is stored relative to its reference keyframe (which is optimized by BA and pose graph).
+    // We need to get first the keyframe pose and then concatenate the relative transformation.
+    // Frames not localized (tracking failure) are not saved.
+
+    // For each frame we have a reference keyframe (lRit), the timestamp (lT) and a flag
+    // which is true when tracking failed (lbL).
+    list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
+    list<Timestamp>::iterator lT = mpTracker->mlFrameTimes.begin();
+    list<bool>::iterator lbL = mpTracker->mlbLost.begin();
+    for(list<Sophus::SE3f>::iterator lit=mpTracker->mlRelativeFramePoses.begin(),
+                lend=mpTracker->mlRelativeFramePoses.end();lit!=lend;lit++, lRit++, lT++, lbL++)
+    {
+        if(*lbL)
+            continue;
+
+        KeyFrame* pKF = *lRit;
+
+        Sophus::SE3f Trw;
+
+        // If the reference keyframe was culled, traverse the spanning tree to get a suitable keyframe.
+        while(pKF->isBad())
+        {
+            Trw = Trw * pKF->mTcp;
+            pKF = pKF->GetParent();
+        }
+
+        Trw = Trw * pKF->GetPose() * Two;
+
+        Sophus::SE3f Tcw = (*lit) * Trw;
+        Sophus::SE3f Twc = Tcw.inverse();
+
+        Eigen::Vector3f twc = Twc.translation();
+        Eigen::Quaternionf q = Twc.unit_quaternion();
+        // TODO
+        f << setprecision(9) << (*lT).first << " " << (*lT).second << twc(0) << " " << twc(1) << " " << twc(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
+    }
+    f.close();
 }
 
 void System::SaveTrajectoryTUM(const string &filename)
@@ -593,7 +658,7 @@ void System::SaveTrajectoryTUM(const string &filename)
     // For each frame we have a reference keyframe (lRit), the timestamp (lT) and a flag
     // which is true when tracking failed (lbL).
     list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
-    list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
+    list<Timestamp>::iterator lT = mpTracker->mlFrameTimes.begin();
     list<bool>::iterator lbL = mpTracker->mlbLost.begin();
     for(list<Sophus::SE3f>::iterator lit=mpTracker->mlRelativeFramePoses.begin(),
         lend=mpTracker->mlRelativeFramePoses.end();lit!=lend;lit++, lRit++, lT++, lbL++)
@@ -620,7 +685,7 @@ void System::SaveTrajectoryTUM(const string &filename)
         Eigen::Vector3f twc = Twc.translation();
         Eigen::Quaternionf q = Twc.unit_quaternion();
 
-        f << setprecision(6) << *lT << " " <<  setprecision(9) << twc(0) << " " << twc(1) << " " << twc(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
+        f << setprecision(6) << toDoubleInSeconds(*lT) << " " <<  setprecision(9) << twc(0) << " " << twc(1) << " " << twc(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
     }
     f.close();
     // cout << endl << "trajectory saved!" << endl;
@@ -651,7 +716,7 @@ void System::SaveKeyFrameTrajectoryTUM(const string &filename)
         Sophus::SE3f Twc = pKF->GetPoseInverse();
         Eigen::Quaternionf q = Twc.unit_quaternion();
         Eigen::Vector3f t = Twc.translation();
-        f << setprecision(6) << pKF->mTimeStamp << setprecision(7) << " " << t(0) << " " << t(1) << " " << t(2)
+        f << setprecision(6) << toDoubleInSeconds(pKF->mTimeStamp) << setprecision(7) << " " << t(0) << " " << t(1) << " " << t(2)
           << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
 
     }
@@ -706,7 +771,7 @@ void System::SaveTrajectoryEuRoC(const string &filename)
     // For each frame we have a reference keyframe (lRit), the timestamp (lT) and a flag
     // which is true when tracking failed (lbL).
     list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
-    list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
+    list<Timestamp>::iterator lT = mpTracker->mlFrameTimes.begin();
     list<bool>::iterator lbL = mpTracker->mlbLost.begin();
 
     //cout << "size mlpReferences: " << mpTracker->mlpReferences.size() << endl;
@@ -759,14 +824,14 @@ void System::SaveTrajectoryEuRoC(const string &filename)
             Sophus::SE3f Twb = (pKF->mImuCalib.mTbc * (*lit) * Trw).inverse();
             Eigen::Quaternionf q = Twb.unit_quaternion();
             Eigen::Vector3f twb = Twb.translation();
-            f << setprecision(6) << 1e9*(*lT) << " " <<  setprecision(9) << twb(0) << " " << twb(1) << " " << twb(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
+            f << setprecision(6) << 1e9*toDoubleInSeconds(*lT) << " " <<  setprecision(9) << twb(0) << " " << twb(1) << " " << twb(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
         }
         else
         {
             Sophus::SE3f Twc = ((*lit)*Trw).inverse();
             Eigen::Quaternionf q = Twc.unit_quaternion();
             Eigen::Vector3f twc = Twc.translation();
-            f << setprecision(6) << 1e9*(*lT) << " " <<  setprecision(9) << twc(0) << " " << twc(1) << " " << twc(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
+            f << setprecision(6) << 1e9*toDoubleInSeconds(*lT) << " " <<  setprecision(9) << twc(0) << " " << twc(1) << " " << twc(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
         }
 
         // cout << "5" << endl;
@@ -811,7 +876,7 @@ void System::SaveTrajectoryEuRoC(const string &filename, Map* pMap)
     // For each frame we have a reference keyframe (lRit), the timestamp (lT) and a flag
     // which is true when tracking failed (lbL).
     list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
-    list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
+    list<Timestamp>::iterator lT = mpTracker->mlFrameTimes.begin();
     list<bool>::iterator lbL = mpTracker->mlbLost.begin();
 
     //cout << "size mlpReferences: " << mpTracker->mlpReferences.size() << endl;
@@ -864,14 +929,14 @@ void System::SaveTrajectoryEuRoC(const string &filename, Map* pMap)
             Sophus::SE3f Twb = (pKF->mImuCalib.mTbc * (*lit) * Trw).inverse();
             Eigen::Quaternionf q = Twb.unit_quaternion();
             Eigen::Vector3f twb = Twb.translation();
-            f << setprecision(6) << 1e9*(*lT) << " " <<  setprecision(9) << twb(0) << " " << twb(1) << " " << twb(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
+            f << setprecision(6) << 1e9*toDoubleInSeconds(*lT) << " " <<  setprecision(9) << twb(0) << " " << twb(1) << " " << twb(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
         }
         else
         {
             Sophus::SE3f Twc = ((*lit)*Trw).inverse();
             Eigen::Quaternionf q = Twc.unit_quaternion();
             Eigen::Vector3f twc = Twc.translation();
-            f << setprecision(6) << 1e9*(*lT) << " " <<  setprecision(9) << twc(0) << " " << twc(1) << " " << twc(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
+            f << setprecision(6) << 1e9*toDoubleInSeconds(*lT) << " " <<  setprecision(9) << twc(0) << " " << twc(1) << " " << twc(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
         }
 
         // cout << "5" << endl;
@@ -1098,7 +1163,7 @@ void System::SaveKeyFrameTrajectoryEuRoC(const string &filename)
             Sophus::SE3f Twb = pKF->GetImuPose();
             Eigen::Quaternionf q = Twb.unit_quaternion();
             Eigen::Vector3f twb = Twb.translation();
-            f << setprecision(6) << 1e9*pKF->mTimeStamp  << " " <<  setprecision(9) << twb(0) << " " << twb(1) << " " << twb(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
+            f << setprecision(6) << 1e9*toDoubleInSeconds(pKF->mTimeStamp)  << " " <<  setprecision(9) << twb(0) << " " << twb(1) << " " << twb(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
 
         }
         else
@@ -1106,7 +1171,7 @@ void System::SaveKeyFrameTrajectoryEuRoC(const string &filename)
             Sophus::SE3f Twc = pKF->GetPoseInverse();
             Eigen::Quaternionf q = Twc.unit_quaternion();
             Eigen::Vector3f t = Twc.translation();
-            f << setprecision(6) << 1e9*pKF->mTimeStamp << " " <<  setprecision(9) << t(0) << " " << t(1) << " " << t(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
+            f << setprecision(6) << 1e9*toDoubleInSeconds(pKF->mTimeStamp) << " " <<  setprecision(9) << t(0) << " " << t(1) << " " << t(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
         }
     }
     f.close();
@@ -1136,7 +1201,7 @@ void System::SaveKeyFrameTrajectoryEuRoC(const string &filename, Map* pMap)
             Sophus::SE3f Twb = pKF->GetImuPose();
             Eigen::Quaternionf q = Twb.unit_quaternion();
             Eigen::Vector3f twb = Twb.translation();
-            f << setprecision(6) << 1e9*pKF->mTimeStamp  << " " <<  setprecision(9) << twb(0) << " " << twb(1) << " " << twb(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
+            f << setprecision(6) << 1e9*toDoubleInSeconds(pKF->mTimeStamp)  << " " <<  setprecision(9) << twb(0) << " " << twb(1) << " " << twb(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
 
         }
         else
@@ -1144,7 +1209,7 @@ void System::SaveKeyFrameTrajectoryEuRoC(const string &filename, Map* pMap)
             Sophus::SE3f Twc = pKF->GetPoseInverse();
             Eigen::Quaternionf q = Twc.unit_quaternion();
             Eigen::Vector3f t = Twc.translation();
-            f << setprecision(6) << 1e9*pKF->mTimeStamp << " " <<  setprecision(9) << t(0) << " " << t(1) << " " << t(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
+            f << setprecision(6) << 1e9*toDoubleInSeconds(pKF->mTimeStamp) << " " <<  setprecision(9) << t(0) << " " << t(1) << " " << t(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
         }
     }
     f.close();
@@ -1203,6 +1268,8 @@ void System::SaveKeyFrameTrajectoryEuRoC(const string &filename, Map* pMap)
     f.close();
 }*/
 
+
+
 void System::SaveTrajectoryKITTI(const string &filename)
 {
     cout << endl << "Saving camera trajectory to " << filename << " ..." << endl;
@@ -1230,7 +1297,7 @@ void System::SaveTrajectoryKITTI(const string &filename)
     // For each frame we have a reference keyframe (lRit), the timestamp (lT) and a flag
     // which is true when tracking failed (lbL).
     list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
-    list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
+    list<Timestamp>::iterator lT = mpTracker->mlFrameTimes.begin();
     for(list<Sophus::SE3f>::iterator lit=mpTracker->mlRelativeFramePoses.begin(),
         lend=mpTracker->mlRelativeFramePoses.end();lit!=lend;lit++, lRit++, lT++)
     {
@@ -1338,9 +1405,9 @@ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
 
 double System::GetTimeFromIMUInit()
 {
-    double aux = mpLocalMapper->GetCurrKFTime()-mpLocalMapper->mFirstTs;
+    double aux = toDoubleInSeconds(mpLocalMapper->GetCurrKFTime())-toDoubleInSeconds(mpLocalMapper->mFirstTs);
     if ((aux>0.) && mpAtlas->isImuInitialized())
-        return mpLocalMapper->GetCurrKFTime()-mpLocalMapper->mFirstTs;
+        return toDoubleInSeconds(mpLocalMapper->GetCurrKFTime())-toDoubleInSeconds(mpLocalMapper->mFirstTs);
     else
         return 0.f;
 }
@@ -1400,17 +1467,13 @@ void System::InsertTrackTime(double& time)
 }
 #endif
 
-void System::SaveAtlas(int type){
-    if(!mStrSaveAtlasToFile.empty())
+void System::SaveAtlas(const std::string &file_out_name, int type){
+    if(!file_out_name.empty())
     {
         //clock_t start = clock();
 
         // Save the current session
         mpAtlas->PreSave();
-
-        string pathSaveFileName = "./";
-        pathSaveFileName = pathSaveFileName.append(mStrSaveAtlasToFile);
-        pathSaveFileName = pathSaveFileName.append(".osa");
 
         string strVocabularyChecksum = CalculateCheckSum(mStrVocabularyFilePath,TEXT_FILE);
         std::size_t found = mStrVocabularyFilePath.find_last_of("/\\");
@@ -1419,8 +1482,8 @@ void System::SaveAtlas(int type){
         if(type == TEXT_FILE) // File text
         {
             cout << "Starting to write the save text file " << endl;
-            std::remove(pathSaveFileName.c_str());
-            std::ofstream ofs(pathSaveFileName, std::ios::binary);
+            std::remove(file_out_name.c_str());
+            std::ofstream ofs(file_out_name, std::ios::binary);
             boost::archive::text_oarchive oa(ofs);
 
             oa << strVocabularyName;
@@ -1431,8 +1494,8 @@ void System::SaveAtlas(int type){
         else if(type == BINARY_FILE) // File binary
         {
             cout << "Starting to write the save binary file" << endl;
-            std::remove(pathSaveFileName.c_str());
-            std::ofstream ofs(pathSaveFileName, std::ios::binary);
+            std::remove(file_out_name.c_str());
+            std::ofstream ofs(file_out_name, std::ios::binary);
             boost::archive::binary_oarchive oa(ofs);
             oa << strVocabularyName;
             oa << strVocabularyChecksum;

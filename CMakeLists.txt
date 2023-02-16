@@ -111,6 +111,8 @@ include/GeometricTools.h
 include/TwoViewReconstruction.h
 include/SerializationUtils.h
 include/Config.h
+include/Timestamp.h
+include/TimestampConversion.h
 include/Settings.h)
 
 add_subdirectory(Thirdparty/g2o)

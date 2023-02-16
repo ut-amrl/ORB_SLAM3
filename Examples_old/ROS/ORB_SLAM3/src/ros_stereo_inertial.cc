@@ -199,34 +199,34 @@ void ImageGrabber::SyncWithImu()
   while(1)
   {
     cv::Mat imLeft, imRight;
-    double tImLeft = 0, tImRight = 0;
+    ORB_SLAM3::Timestamp tImLeft = std::make_pair(0, 0), tImRight = std::make_pair(0, 0);
     if (!imgLeftBuf.empty()&&!imgRightBuf.empty()&&!mpImuGb->imuBuf.empty())
     {
-      tImLeft = imgLeftBuf.front()->header.stamp.toSec();
-      tImRight = imgRightBuf.front()->header.stamp.toSec();
+      tImLeft = std::make_pair(imgLeftBuf.front()->header.stamp.sec, imgLeftBuf.front()->header.stamp.nsec);
+      tImRight = std::make_pair(imgRightBuf.front()->header.stamp.sec, imgRightBuf.front()->header.stamp.nsec);
 
       this->mBufMutexRight.lock();
-      while((tImLeft-tImRight)>maxTimeDiff && imgRightBuf.size()>1)
+      while((ORB_SLAM3::toDoubleInSeconds(tImLeft)-ORB_SLAM3::toDoubleInSeconds(tImRight))>maxTimeDiff && imgRightBuf.size()>1)
       {
         imgRightBuf.pop();
-        tImRight = imgRightBuf.front()->header.stamp.toSec();
+        tImRight = std::make_pair(imgRightBuf.front()->header.stamp.sec, imgRightBuf.front()->header.stamp.nsec);
       }
       this->mBufMutexRight.unlock();
 
       this->mBufMutexLeft.lock();
-      while((tImRight-tImLeft)>maxTimeDiff && imgLeftBuf.size()>1)
+      while((ORB_SLAM3::toDoubleInSeconds(tImLeft)-ORB_SLAM3::toDoubleInSeconds(tImRight))>maxTimeDiff && imgLeftBuf.size()>1)
       {
         imgLeftBuf.pop();
-        tImLeft = imgLeftBuf.front()->header.stamp.toSec();
+        tImLeft = std::make_pair(imgLeftBuf.front()->header.stamp.sec, imgLeftBuf.front()->header.stamp.nsec);
       }
       this->mBufMutexLeft.unlock();
 
-      if((tImLeft-tImRight)>maxTimeDiff || (tImRight-tImLeft)>maxTimeDiff)
+      if((ORB_SLAM3::toDoubleInSeconds(tImLeft)-ORB_SLAM3::toDoubleInSeconds(tImRight))>maxTimeDiff || (ORB_SLAM3::toDoubleInSeconds(tImLeft)-ORB_SLAM3::toDoubleInSeconds(tImRight))>maxTimeDiff)
       {
         // std::cout << "big time difference" << std::endl;
         continue;
       }
-      if(tImLeft>mpImuGb->imuBuf.back()->header.stamp.toSec())
+      if(ORB_SLAM3::toDoubleInSeconds(tImLeft)>mpImuGb->imuBuf.back()->header.stamp.toSec())
           continue;
 
       this->mBufMutexLeft.lock();
@@ -245,7 +245,7 @@ void ImageGrabber::SyncWithImu()
       {
         // Load imu measurements from buffer
         vImuMeas.clear();
-        while(!mpImuGb->imuBuf.empty() && mpImuGb->imuBuf.front()->header.stamp.toSec()<=tImLeft)
+        while(!mpImuGb->imuBuf.empty() && mpImuGb->imuBuf.front()->header.stamp.toSec()<=ORB_SLAM3::toDoubleInSeconds(tImLeft))
         {
           double t = mpImuGb->imuBuf.front()->header.stamp.toSec();
           cv::Point3f acc(mpImuGb->imuBuf.front()->linear_acceleration.x, mpImuGb->imuBuf.front()->linear_acceleration.y, mpImuGb->imuBuf.front()->linear_acceleration.z);

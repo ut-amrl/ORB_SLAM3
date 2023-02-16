@@ -1451,7 +1451,7 @@ bool Tracking::GetStepByStep()
 
 
 
-Sophus::SE3f Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRectRight, const double &timestamp, string filename)
+Sophus::SE3f Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRectRight, const Timestamp &timestamp, string filename)
 {
     //cout << "GrabImageStereo" << endl;
 
@@ -1517,7 +1517,7 @@ Sophus::SE3f Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat 
 }
 
 
-Sophus::SE3f Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp, string filename)
+Sophus::SE3f Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const Timestamp &timestamp, string filename)
 {
     mImGray = imRGB;
     cv::Mat imDepth = imD;
@@ -1563,7 +1563,7 @@ Sophus::SE3f Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, co
 }
 
 
-Sophus::SE3f Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp, string filename)
+Sophus::SE3f Tracking::GrabImageMonocular(const cv::Mat &im, const Timestamp &timestamp, string filename)
 {
     mImGray = im;
     if(mImGray.channels()==3)
@@ -1649,11 +1649,11 @@ void Tracking::PreintegrateIMU()
             {
                 IMU::Point* m = &mlQueueImuData.front();
                 cout.precision(17);
-                if(m->t<mCurrentFrame.mpPrevFrame->mTimeStamp-mImuPer)
+                if(m->t<toDoubleInSeconds(mCurrentFrame.mpPrevFrame->mTimeStamp)-mImuPer)
                 {
                     mlQueueImuData.pop_front();
                 }
-                else if(m->t<mCurrentFrame.mTimeStamp-mImuPer)
+                else if(m->t<toDoubleInSeconds(mCurrentFrame.mTimeStamp)-mImuPer)
                 {
                     mvImuFromLastFrame.push_back(*m);
                     mlQueueImuData.pop_front();
@@ -1689,12 +1689,12 @@ void Tracking::PreintegrateIMU()
         if((i==0) && (i<(n-1)))
         {
             float tab = mvImuFromLastFrame[i+1].t-mvImuFromLastFrame[i].t;
-            float tini = mvImuFromLastFrame[i].t-mCurrentFrame.mpPrevFrame->mTimeStamp;
+            float tini = mvImuFromLastFrame[i].t-toDoubleInSeconds(mCurrentFrame.mpPrevFrame->mTimeStamp);
             acc = (mvImuFromLastFrame[i].a+mvImuFromLastFrame[i+1].a-
                     (mvImuFromLastFrame[i+1].a-mvImuFromLastFrame[i].a)*(tini/tab))*0.5f;
             angVel = (mvImuFromLastFrame[i].w+mvImuFromLastFrame[i+1].w-
                     (mvImuFromLastFrame[i+1].w-mvImuFromLastFrame[i].w)*(tini/tab))*0.5f;
-            tstep = mvImuFromLastFrame[i+1].t-mCurrentFrame.mpPrevFrame->mTimeStamp;
+            tstep = mvImuFromLastFrame[i+1].t-toDoubleInSeconds(mCurrentFrame.mpPrevFrame->mTimeStamp);
         }
         else if(i<(n-1))
         {
@@ -1705,18 +1705,18 @@ void Tracking::PreintegrateIMU()
         else if((i>0) && (i==(n-1)))
         {
             float tab = mvImuFromLastFrame[i+1].t-mvImuFromLastFrame[i].t;
-            float tend = mvImuFromLastFrame[i+1].t-mCurrentFrame.mTimeStamp;
+            float tend = mvImuFromLastFrame[i+1].t-toDoubleInSeconds(mCurrentFrame.mTimeStamp);
             acc = (mvImuFromLastFrame[i].a+mvImuFromLastFrame[i+1].a-
                     (mvImuFromLastFrame[i+1].a-mvImuFromLastFrame[i].a)*(tend/tab))*0.5f;
             angVel = (mvImuFromLastFrame[i].w+mvImuFromLastFrame[i+1].w-
                     (mvImuFromLastFrame[i+1].w-mvImuFromLastFrame[i].w)*(tend/tab))*0.5f;
-            tstep = mCurrentFrame.mTimeStamp-mvImuFromLastFrame[i].t;
+            tstep = toDoubleInSeconds(mCurrentFrame.mTimeStamp)-mvImuFromLastFrame[i].t;
         }
         else if((i==0) && (i==(n-1)))
         {
             acc = mvImuFromLastFrame[i].a;
             angVel = mvImuFromLastFrame[i].w;
-            tstep = mCurrentFrame.mTimeStamp-mCurrentFrame.mpPrevFrame->mTimeStamp;
+            tstep = toDoubleInSeconds(mCurrentFrame.mTimeStamp)-toDoubleInSeconds(mCurrentFrame.mpPrevFrame->mTimeStamp);
         }
 
         if (!mpImuPreintegratedFromLastKF)
@@ -1825,7 +1825,7 @@ void Tracking::Track()
             CreateMapInAtlas();
             return;
         }
-        else if(mCurrentFrame.mTimeStamp>mLastFrame.mTimeStamp+1.0)
+        else if(toDoubleInSeconds(mCurrentFrame.mTimeStamp)>toDoubleInSeconds(mLastFrame.mTimeStamp)+1.0)
         {
             // cout << mCurrentFrame.mTimeStamp << ", " << mLastFrame.mTimeStamp << endl;
             // cout << "id last: " << mLastFrame.mnId << "    id curr: " << mCurrentFrame.mnId << endl;
@@ -1990,7 +1990,7 @@ void Tracking::Track()
                         else
                             bOK = false;
 
-                        if (mCurrentFrame.mTimeStamp-mTimeStampLost>time_recently_lost)
+                        if (toDoubleInSeconds(mCurrentFrame.mTimeStamp)-toDoubleInSeconds(mTimeStampLost)>time_recently_lost)
                         {
                             mState = LOST;
                             Verbose::PrintMess("Track Lost...", Verbose::VERBOSITY_NORMAL);
@@ -2003,7 +2003,7 @@ void Tracking::Track()
                         bOK = Relocalization();
                         //std::cout << "mCurrentFrame.mTimeStamp:" << to_string(mCurrentFrame.mTimeStamp) << std::endl;
                         //std::cout << "mTimeStampLost:" << to_string(mTimeStampLost) << std::endl;
-                        if(mCurrentFrame.mTimeStamp-mTimeStampLost>3.0f && !bOK)
+                        if(toDoubleInSeconds(mCurrentFrame.mTimeStamp)-toDoubleInSeconds(mTimeStampLost)>3.0f && !bOK)
                         {
                             mState = LOST;
                             Verbose::PrintMess("Track Lost...", Verbose::VERBOSITY_NORMAL);
@@ -2480,7 +2480,7 @@ void Tracking::MonocularInitialization()
     }
     else
     {
-        if (((int)mCurrentFrame.mvKeys.size()<=100)||((mSensor == System::IMU_MONOCULAR)&&(mLastFrame.mTimeStamp-mInitialFrame.mTimeStamp>1.0)))
+        if (((int)mCurrentFrame.mvKeys.size()<=100)||((mSensor == System::IMU_MONOCULAR)&&(toDoubleInSeconds(mLastFrame.mTimeStamp)-toDoubleInSeconds(mInitialFrame.mTimeStamp)>1.0)))
         {
             mbReadyToInitializate = false;
 
@@ -2642,7 +2642,7 @@ void Tracking::CreateInitialMapMonocular()
     mbVelocity = false;
     Eigen::Vector3f phi = deltaT.so3().log();
 
-    double aux = (mCurrentFrame.mTimeStamp-mLastFrame.mTimeStamp)/(mCurrentFrame.mTimeStamp-mInitialFrame.mTimeStamp);
+    double aux = (toDoubleInSeconds(mCurrentFrame.mTimeStamp)-toDoubleInSeconds(mLastFrame.mTimeStamp))/(toDoubleInSeconds(mCurrentFrame.mTimeStamp)-toDoubleInSeconds(mInitialFrame.mTimeStamp));
     phi *= aux;
 
     mLastFrame = Frame(mCurrentFrame);
@@ -3065,9 +3065,9 @@ bool Tracking::NeedNewKeyFrame()
 {
     if((mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD) && !mpAtlas->GetCurrentMap()->isImuInitialized())
     {
-        if (mSensor == System::IMU_MONOCULAR && (mCurrentFrame.mTimeStamp-mpLastKeyFrame->mTimeStamp)>=0.25)
+        if (mSensor == System::IMU_MONOCULAR && (toDoubleInSeconds(mCurrentFrame.mTimeStamp)-toDoubleInSeconds(mpLastKeyFrame->mTimeStamp))>=0.25)
             return true;
-        else if ((mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD) && (mCurrentFrame.mTimeStamp-mpLastKeyFrame->mTimeStamp)>=0.25)
+        else if ((mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD) && (toDoubleInSeconds(mCurrentFrame.mTimeStamp)-toDoubleInSeconds(mpLastKeyFrame->mTimeStamp))>=0.25)
             return true;
         else
             return false;
@@ -3168,12 +3168,12 @@ bool Tracking::NeedNewKeyFrame()
     {
         if (mSensor==System::IMU_MONOCULAR)
         {
-            if ((mCurrentFrame.mTimeStamp-mpLastKeyFrame->mTimeStamp)>=0.5)
+            if ((toDoubleInSeconds(mCurrentFrame.mTimeStamp)-toDoubleInSeconds(mpLastKeyFrame->mTimeStamp))>=0.5)
                 c3 = true;
         }
         else if (mSensor==System::IMU_STEREO || mSensor == System::IMU_RGBD)
         {
-            if ((mCurrentFrame.mTimeStamp-mpLastKeyFrame->mTimeStamp)>=0.5)
+            if ((toDoubleInSeconds(mCurrentFrame.mTimeStamp)-toDoubleInSeconds(mpLastKeyFrame->mTimeStamp))>=0.5)
                 c3 = true;
         }
     }

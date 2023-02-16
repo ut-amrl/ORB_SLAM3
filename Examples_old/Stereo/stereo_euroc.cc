@@ -25,6 +25,7 @@
 #include<opencv2/core/core.hpp>
 
 #include<System.h>
+#include <TimestampConversion.h>
 
 using namespace std;
 
@@ -211,7 +212,7 @@ int main(int argc, char **argv)
     #endif
 
             // Pass the images to the SLAM system
-            SLAM.TrackStereo(imLeftRect,imRightRect,tframe, vector<ORB_SLAM3::IMU::Point>(), vstrImageLeft[seq][ni]);
+            SLAM.TrackStereo(imLeftRect,imRightRect,ORB_SLAM3::toTimestampPair(tframe), vector<ORB_SLAM3::IMU::Point>(), vstrImageLeft[seq][ni]);
 
     #ifdef COMPILEDWITHC11
             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();

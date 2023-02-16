@@ -143,11 +143,11 @@ void ImageGrabber::SyncWithImu()
   while(1)
   {
     cv::Mat im;
-    double tIm = 0;
+    ORB_SLAM3::Timestamp tIm = std::make_pair(0, 0);
     if (!img0Buf.empty()&&!mpImuGb->imuBuf.empty())
     {
-      tIm = img0Buf.front()->header.stamp.toSec();
-      if(tIm>mpImuGb->imuBuf.back()->header.stamp.toSec())
+      tIm = std::make_pair(img0Buf.front()->header.stamp.sec, img0Buf.front()->header.stamp.nsec);
+      if(ORB_SLAM3::toDoubleInSeconds(tIm)>mpImuGb->imuBuf.back()->header.stamp.toSec())
           continue;
       {
       this->mBufMutex.lock();
@@ -162,7 +162,7 @@ void ImageGrabber::SyncWithImu()
       {
         // Load imu measurements from buffer
         vImuMeas.clear();
-        while(!mpImuGb->imuBuf.empty() && mpImuGb->imuBuf.front()->header.stamp.toSec()<=tIm)
+        while(!mpImuGb->imuBuf.empty() && mpImuGb->imuBuf.front()->header.stamp.toSec()<=ORB_SLAM3::toDoubleInSeconds(tIm))
         {
           double t = mpImuGb->imuBuf.front()->header.stamp.toSec();
           cv::Point3f acc(mpImuGb->imuBuf.front()->linear_acceleration.x, mpImuGb->imuBuf.front()->linear_acceleration.y, mpImuGb->imuBuf.front()->linear_acceleration.z);

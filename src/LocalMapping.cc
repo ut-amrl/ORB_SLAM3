@@ -132,7 +132,7 @@ void LocalMapping::Run()
                                 (mpCurrentKeyFrame->mPrevKF->mPrevKF->GetCameraCenter() - mpCurrentKeyFrame->mPrevKF->GetCameraCenter()).norm();
 
                         if(dist>0.05)
-                            mTinit += mpCurrentKeyFrame->mTimeStamp - mpCurrentKeyFrame->mPrevKF->mTimeStamp;
+                            mTinit += toDoubleInSeconds(mpCurrentKeyFrame->mTimeStamp) - toDoubleInSeconds(mpCurrentKeyFrame->mPrevKF->mTimeStamp);
                         if(!mpCurrentKeyFrame->GetMap()->GetIniertialBA2())
                         {
                             if((mTinit<10.f) && (dist<0.02))
@@ -1019,7 +1019,7 @@ void LocalMapping::KeyFrameCulling()
 
                 if(pKF->mPrevKF && pKF->mNextKF)
                 {
-                    const float t = pKF->mNextKF->mTimeStamp-pKF->mPrevKF->mTimeStamp;
+                    const float t = toDoubleInSeconds(pKF->mNextKF->mTimeStamp)-toDoubleInSeconds(pKF->mPrevKF->mTimeStamp);
 
                     if((bInitImu && (pKF->mnId<last_ID) && t<3.) || (t<0.5))
                     {
@@ -1207,7 +1207,7 @@ void LocalMapping::InitializeIMU(float priorG, float priorA, bool bFIBA)
         return;
 
     mFirstTs=vpKF.front()->mTimeStamp;
-    if(mpCurrentKeyFrame->mTimeStamp-mFirstTs<minTime)
+    if((toDoubleInSeconds(mpCurrentKeyFrame->mTimeStamp)-toDoubleInSeconds(mFirstTs))<minTime)
         return;
 
     bInitializing = true;
@@ -1250,7 +1250,7 @@ void LocalMapping::InitializeIMU(float priorG, float priorA, bool bFIBA)
         Eigen::Vector3f vzg = v*ang/nv;
         Rwg = Sophus::SO3f::exp(vzg).matrix();
         mRwg = Rwg.cast<double>();
-        mTinit = mpCurrentKeyFrame->mTimeStamp-mFirstTs;
+        mTinit = toDoubleInSeconds(mpCurrentKeyFrame->mTimeStamp)-toDoubleInSeconds(mFirstTs);
     }
     else
     {
@@ -1261,7 +1261,7 @@ void LocalMapping::InitializeIMU(float priorG, float priorA, bool bFIBA)
 
     mScale=1.0;
 
-    mInitTime = mpTracker->mLastFrame.mTimeStamp-vpKF.front()->mTimeStamp;
+    mInitTime = toDoubleInSeconds(mpTracker->mLastFrame.mTimeStamp)-toDoubleInSeconds(vpKF.front()->mTimeStamp);
 
     std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
     Optimizer::InertialOptimization(mpAtlas->GetCurrentMap(), mRwg, mScale, mbg, mba, mbMonocular, infoInertial, false, false, priorG, priorA);
@@ -1296,7 +1296,7 @@ void LocalMapping::InitializeIMU(float priorG, float priorA, bool bFIBA)
     if (!mpAtlas->isImuInitialized())
     {
         mpAtlas->SetImuInitialized();
-        mpTracker->t0IMU = mpTracker->mCurrentFrame.mTimeStamp;
+        mpTracker->t0IMU = toDoubleInSeconds(mpTracker->mCurrentFrame.mTimeStamp);
         mpCurrentKeyFrame->bImu = true;
     }
 
@@ -1503,7 +1503,7 @@ bool LocalMapping::IsInitializing()
 }
 
 
-double LocalMapping::GetCurrKFTime()
+Timestamp LocalMapping::GetCurrKFTime()
 {
 
     if (mpCurrentKeyFrame)
@@ -1511,7 +1511,7 @@ double LocalMapping::GetCurrKFTime()
         return mpCurrentKeyFrame->mTimeStamp;
     }
     else
-        return 0.0;
+        return std::make_pair(0.0, 0.0);
 }
 
 KeyFrame* LocalMapping::GetCurrKF()

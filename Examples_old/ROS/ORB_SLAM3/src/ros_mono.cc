@@ -28,6 +28,7 @@
 #include<opencv2/core/core.hpp>
 
 #include"../../../include/System.h"
+#include <TimestampConversion.h>
 
 using namespace std;
 
@@ -88,7 +89,7 @@ void ImageGrabber::GrabImage(const sensor_msgs::ImageConstPtr& msg)
         return;
     }
 
-    mpSLAM->TrackMonocular(cv_ptr->image,cv_ptr->header.stamp.toSec());
+    mpSLAM->TrackMonocular(cv_ptr->image,std::make_pair(cv_ptr->header.stamp.sec, cv_ptr->header.stamp.nsec));
 }
 
 

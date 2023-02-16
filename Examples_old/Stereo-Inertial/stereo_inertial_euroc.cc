@@ -23,7 +23,7 @@
 #include<chrono>
 #include <ctime>
 #include <sstream>
-
+#include <TimestampConversion.h>
 #include <opencv2/core/core.hpp>
 
 
@@ -259,7 +259,7 @@ int main(int argc, char **argv)
     #endif
 
             // Pass the images to the SLAM system
-            SLAM.TrackStereo(imLeftRect,imRightRect,tframe,vImuMeas);
+            SLAM.TrackStereo(imLeftRect,imRightRect,ORB_SLAM3::toTimestampPair(tframe),vImuMeas);
 
     #ifdef COMPILEDWITHC11
             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();

@@ -31,13 +31,14 @@
 
 #include "GeometricCamera.h"
 #include "SerializationUtils.h"
+#include <Timestamp.h>
+#include <TimestampConversion.h>
 
 #include <mutex>
 
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
-
 
 namespace ORB_SLAM3
 {
@@ -58,7 +59,8 @@ class KeyFrame
     {
         ar & mnId;
         ar & const_cast<long unsigned int&>(mnFrameId);
-        ar & const_cast<double&>(mTimeStamp);
+        ar & const_cast<unsigned int&>(mTimeStamp.first);
+        ar & const_cast<unsigned int&>(mTimeStamp.second);
         // Grid
         ar & const_cast<int&>(mnGridCols);
         ar & const_cast<int&>(mnGridRows);
@@ -312,7 +314,7 @@ public:
     long unsigned int mnId;
     const long unsigned int mnFrameId;
 
-    const double mTimeStamp;
+    const Timestamp mTimeStamp;
 
     // Grid (to speed up feature matching)
     const int mnGridCols;

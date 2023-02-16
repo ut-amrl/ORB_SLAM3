@@ -27,6 +27,7 @@
 
 #include<System.h>
 #include "ImuTypes.h"
+#include <TimestampConversion.h>
 
 using namespace std;
 
@@ -208,7 +209,7 @@ int main(int argc, char **argv)
     #endif
 
             // Pass the image to the SLAM system
-            SLAM.TrackStereo(imLeft,imRight,tframe,vImuMeas);
+            SLAM.TrackStereo(imLeft,imRight,ORB_SLAM3::toTimestampPair(tframe),vImuMeas);
 
     #ifdef COMPILEDWITHC11
             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();

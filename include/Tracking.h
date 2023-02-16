@@ -69,9 +69,9 @@ public:
     bool ParseIMUParamFile(cv::FileStorage &fSettings);
 
     // Preprocess the input and call Track(). Extract features and performs stereo matching.
-    Sophus::SE3f GrabImageStereo(const cv::Mat &imRectLeft,const cv::Mat &imRectRight, const double &timestamp, string filename);
-    Sophus::SE3f GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp, string filename);
-    Sophus::SE3f GrabImageMonocular(const cv::Mat &im, const double &timestamp, string filename);
+    Sophus::SE3f GrabImageStereo(const cv::Mat &imRectLeft,const cv::Mat &imRectRight, const Timestamp &timestamp, string filename);
+    Sophus::SE3f GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const Timestamp &timestamp, string filename);
+    Sophus::SE3f GrabImageMonocular(const cv::Mat &im, const Timestamp &timestamp, string filename);
 
     void GrabImuData(const IMU::Point &imuMeasurement);
 
@@ -151,7 +151,7 @@ public:
     // Basically we store the reference keyframe for each frame and its relative transformation
     list<Sophus::SE3f> mlRelativeFramePoses;
     list<KeyFrame*> mlpReferences;
-    list<double> mlFrameTimes;
+    list<Timestamp> mlFrameTimes;
     list<bool> mlbLost;
 
     // frames with estimated pose
@@ -166,7 +166,7 @@ public:
 
     float mMeanTrack;
     bool mbInitWith3KFs;
-    double t0; // time-stamp of first read frame
+    Timestamp t0 = std::make_pair(0, 0); // time-stamp of first read frame
     double t0vis; // time-stamp of first inserted keyframe
     double t0IMU; // time-stamp of IMU initialization
     bool mFastInit = false;
@@ -319,7 +319,7 @@ protected:
     KeyFrame* mpLastKeyFrame;
     unsigned int mnLastKeyFrameId;
     unsigned int mnLastRelocFrameId;
-    double mTimeStampLost;
+    Timestamp mTimeStampLost = std::make_pair(0, 0);
     double time_recently_lost;
 
     unsigned int mnFirstFrameId;
