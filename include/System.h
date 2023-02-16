@@ -268,6 +268,8 @@ private:
     string mStrVocabularyFilePath;
 
     Settings* settings_;
+
+    size_t trajectory_frame_start_idx_ = 0;
 };
 
 }// namespace ORB_SLAM

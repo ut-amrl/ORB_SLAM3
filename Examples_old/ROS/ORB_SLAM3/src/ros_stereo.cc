@@ -51,13 +51,18 @@ class TrajectoryServiceListener {
 public:
     TrajectoryServiceListener(ORB_SLAM3::System *pSLAM) : mpSLAM(pSLAM) {}
 
-    bool startNewTrajectoryCallback(amrl_msgs::OrbSLAMSaveFilesAndStartNewTrajectorySrvRequest &request,
-                                    amrl_msgs::OrbSLAMSaveFilesAndStartNewTrajectorySrvResponse &response) {
-        ROS_INFO_STREAM("Starting new trajectory called with args " << request.trajectory_file_name << ", "
-                                                                    << request.map_file_name);
+    bool saveTrajectoryAndStartNew(amrl_msgs::OrbSLAMSaveFilesAndStartNewTrajectorySrvRequest &request,
+                                   amrl_msgs::OrbSLAMSaveFilesAndStartNewTrajectorySrvResponse &response) {
+        ROS_INFO_STREAM("Saving files and starting new trajectory called with args "
+                                << request.trajectory_file_name << ", "
+                                << request.map_file_name);
 
         if (!request.trajectory_file_name.empty()) {
-            // TODO save trajectory
+            ROS_INFO("Saving trajectory");
+            mpSLAM->SaveLatestTrajectoryOVSlam(request.trajectory_file_name);
+            mpSLAM->MarkNewTrajectoryStart();
+            response.traj_write_success = true;
+            ROS_INFO("Done saving trajectory");
         } else {
             response.traj_write_success = true;
         }
@@ -68,6 +73,7 @@ public:
             response.map_file_write_success = true;
         }
 
+        ROS_INFO("Done saving trajectory (and optional map) file(s)");
         return true;
     }
 
@@ -137,7 +143,7 @@ int main(int argc, char **argv) {
     TrajectoryServiceListener traj_service_listener(&SLAM);
 
     ros::ServiceServer service = nh.advertiseService("/orb_slam/save_and_start_new_trajectory",
-                                                     &TrajectoryServiceListener::startNewTrajectoryCallback,
+                                                     &TrajectoryServiceListener::saveTrajectoryAndStartNew,
                                                      &traj_service_listener);
 
     message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "/camera/left/image_raw", 1);

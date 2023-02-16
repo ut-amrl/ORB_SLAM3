@@ -29,9 +29,22 @@
 #include <opencv2/features2d/features2d.hpp>
 
 #include <vector>
+#include <fstream>
 
 namespace ORB_SLAM3
 {
+
+inline void writeCommaSeparatedStringsLineToFile(
+        const std::vector<std::string> &strings, std::ofstream &file_stream) {
+    for (size_t i = 0; i < strings.size(); i++) {
+        file_stream << strings[i];
+        if (i == (strings.size() - 1)) {
+            file_stream << "\n";
+        } else {
+            file_stream << ", ";
+        }
+    }
+}
 
 template <class Archive>
 void serializeSophusSE3(Archive &ar, Sophus::SE3f &T, const unsigned int version)

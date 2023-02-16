@@ -570,16 +570,11 @@ bool System::isShutDown() {
 }
 
 void System::MarkNewTrajectoryStart() {
-    // TODO
+    trajectory_frame_start_idx_ = mpTracker->mlFrameTimes.size();
 }
 
 void System::SaveLatestTrajectoryOVSlam(const std::string &out_file_name) {
     cout << endl << "Saving camera trajectory to " << out_file_name << " ..." << endl;
-    if(mSensor==MONOCULAR)
-    {
-        cerr << "ERROR: SaveTrajectoryTUM cannot be used for monocular." << endl;
-        return;
-    }
 
     vector<KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
     sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
@@ -588,45 +583,65 @@ void System::SaveLatestTrajectoryOVSlam(const std::string &out_file_name) {
     // After a loop closure the first keyframe might not be at the origin.
     Sophus::SE3f Two = vpKFs[0]->GetPoseInverse();
 
-    ofstream f;
-    f.open(out_file_name.c_str());
+    std::ofstream f(out_file_name, std::ios::trunc);
     f << fixed;
+
+    std::vector<std::string> column_labels = {
+        "seconds", "nanoseconds", "lost", "transl_x", "transl_y", "transl_z", "quat_x", "quat_y", "quat_z", "quat_w"
+    };
+    writeCommaSeparatedStringsLineToFile(column_labels, f);
 
     // Frame pose is stored relative to its reference keyframe (which is optimized by BA and pose graph).
     // We need to get first the keyframe pose and then concatenate the relative transformation.
     // Frames not localized (tracking failure) are not saved.
 
+    if (mpTracker->mlRelativeFramePoses.size() <= trajectory_frame_start_idx_) {
+        f.close();
+        return;
+    }
+
     // For each frame we have a reference keyframe (lRit), the timestamp (lT) and a flag
     // which is true when tracking failed (lbL).
-    list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
-    list<Timestamp>::iterator lT = mpTracker->mlFrameTimes.begin();
-    list<bool>::iterator lbL = mpTracker->mlbLost.begin();
-    for(list<Sophus::SE3f>::iterator lit=mpTracker->mlRelativeFramePoses.begin(),
+    list<ORB_SLAM3::KeyFrame*>::iterator lRit = std::next(mpTracker->mlpReferences.begin(), trajectory_frame_start_idx_);
+    list<Timestamp>::iterator lT = std::next(mpTracker->mlFrameTimes.begin(), trajectory_frame_start_idx_);
+    list<bool>::iterator lbL = std::next(mpTracker->mlbLost.begin(), trajectory_frame_start_idx_);
+    for(list<Sophus::SE3f>::iterator lit=std::next(mpTracker->mlRelativeFramePoses.begin(), trajectory_frame_start_idx_),
                 lend=mpTracker->mlRelativeFramePoses.end();lit!=lend;lit++, lRit++, lT++, lbL++)
     {
-        if(*lbL)
-            continue;
+        Eigen::Vector3f twc;
+        Eigen::Quaternionf q;
+        if(!(*lbL)) {
 
-        KeyFrame* pKF = *lRit;
+            KeyFrame *pKF = *lRit;
 
-        Sophus::SE3f Trw;
+            Sophus::SE3f Trw;
 
-        // If the reference keyframe was culled, traverse the spanning tree to get a suitable keyframe.
-        while(pKF->isBad())
-        {
-            Trw = Trw * pKF->mTcp;
-            pKF = pKF->GetParent();
+            // If the reference keyframe was culled, traverse the spanning tree to get a suitable keyframe.
+            while (pKF->isBad()) {
+                Trw = Trw * pKF->mTcp;
+                pKF = pKF->GetParent();
+            }
+
+            Trw = Trw * pKF->GetPose() * Two;
+
+            Sophus::SE3f Tcw = (*lit) * Trw;
+            Sophus::SE3f Twc = Tcw.inverse();
+
+            twc = Twc.translation();
+            q = Twc.unit_quaternion();
         }
 
-        Trw = Trw * pKF->GetPose() * Two;
-
-        Sophus::SE3f Tcw = (*lit) * Trw;
-        Sophus::SE3f Twc = Tcw.inverse();
-
-        Eigen::Vector3f twc = Twc.translation();
-        Eigen::Quaternionf q = Twc.unit_quaternion();
-        // TODO
-        f << setprecision(9) << (*lT).first << " " << (*lT).second << twc(0) << " " << twc(1) << " " << twc(2) << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
+        writeCommaSeparatedStringsLineToFile(
+                {std::to_string((*lT).first),
+                 std::to_string((*lT).second),
+    std::to_string((*lbL) ? 1 : 0),
+                 std::to_string(twc(0)),
+                 std::to_string(twc(1)),
+                 std::to_string(twc(2)),
+                 std::to_string(q.x()),
+                 std::to_string(q.y()),
+                 std::to_string(q.z()),
+                 std::to_string(q.w())}, f);
     }
     f.close();
 }
