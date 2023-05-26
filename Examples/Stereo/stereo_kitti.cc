@@ -43,11 +43,13 @@ int main(int argc, char **argv)
     vector<string> vstrImageLeft;
     vector<string> vstrImageRight;
     vector<double> vTimestamps;
+    std::cout << "Loading images from " << string(argv[3]) << std::endl;
     LoadImages(string(argv[3]), vstrImageLeft, vstrImageRight, vTimestamps);
 
     const int nImages = vstrImageLeft.size();
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
+    std::cout << "Initializing SLAM system ..." << std::endl;
     ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::STEREO,true);
     float imageScale = SLAM.GetImageScale();
 
