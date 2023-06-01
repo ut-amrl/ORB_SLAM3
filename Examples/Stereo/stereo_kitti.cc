@@ -21,6 +21,7 @@
 #include<fstream>
 #include<iomanip>
 #include<chrono>
+#include <unistd.h>
 
 #include<opencv2/core/core.hpp>
 
@@ -33,14 +34,14 @@ void LoadImages(const string &strPathToSequence, vector<string> &vstrImageLeft,
 
 int main(int argc, char **argv)
 {
-    if(argc != 4 && argc != 5)
+    if(argc != 4 && argc != 5 && argc != 7)
     {
-        cerr << endl << "Usage: ./stereo_kitti path_to_vocabulary path_to_settings path_to_sequence <do_rectify>" << endl;
+        cerr << endl << "Usage: ./stereo_kitti path_to_vocabulary path_to_settings path_to_sequence <do_rectify> <start_frame_id> <end_frame_id>" << endl;
         return 1;
     }
 
     bool do_rectify = false;
-    if (argc == 5) {
+    if (argc >= 5) {
         stringstream ss(argv[4]);
         ss >> boolalpha >> do_rectify;
     }
@@ -107,11 +108,32 @@ int main(int argc, char **argv)
     double t_track = 0.f;
     double t_resize = 0.f;
 
+    size_t start_frame_id, end_frame_id;
+    if (argc == 7) {
+        stringstream ss_start(argv[5]);
+        ss_start >> start_frame_id;
+        stringstream ss_end(argv[6]);
+        ss_end >> end_frame_id;
+    } else {
+        start_frame_id = 0;
+        end_frame_id = nImages - 1;
+    }
+    cout << "Starting Frame: " << start_frame_id << "; Ending Frame: " << end_frame_id << endl;
+
     // Main loop
     cv::Mat imLeft, imRight;
     for(int ni=0; ni<nImages; ni++)
     {
         // Read left and right images from file
+        if (ni < start_frame_id) {
+            continue;
+        }
+        if (ni > end_frame_id) {
+            // Sleep to avoid errors caused by threading
+            sleep(5);
+            exit(0);
+        }
+        std::cout << "Processing Frame " << ni << std::endl;
         imLeft = cv::imread(vstrImageLeft[ni],cv::IMREAD_UNCHANGED); //,cv::IMREAD_UNCHANGED);
         imRight = cv::imread(vstrImageRight[ni],cv::IMREAD_UNCHANGED); //,cv::IMREAD_UNCHANGED);
         double tframe = vTimestamps[ni];
@@ -185,6 +207,9 @@ int main(int argc, char **argv)
 
         if(ttrack<T)
             usleep((T-ttrack)*1e6);
+        if (ni == 0) {
+            sleep(0);
+        }
     }
 
     // Stop all threads
