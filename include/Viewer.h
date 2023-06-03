@@ -41,7 +41,7 @@ class Viewer
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    Viewer(System* pSystem, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Tracking *pTracking, const string &strSettingPath, Settings* settings);
+    Viewer(System* pSystem, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Tracking *pTracking, const string &strSettingPath, Settings* settings, std::string &viewer_label);
 
     void newParameterLoader(Settings* settings);
 
@@ -74,6 +74,8 @@ private:
     FrameDrawer* mpFrameDrawer;
     MapDrawer* mpMapDrawer;
     Tracking* mpTracker;
+
+    std::string mpViewerLabel;
 
     // 1/fps in ms
     double mT;

@@ -25,9 +25,9 @@
 namespace ORB_SLAM3
 {
 
-Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Tracking *pTracking, const string &strSettingPath, Settings* settings):
+Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Tracking *pTracking, const string &strSettingPath, Settings* settings, std::string &viewerLabel):
     both(false), mpSystem(pSystem), mpFrameDrawer(pFrameDrawer),mpMapDrawer(pMapDrawer), mpTracker(pTracking),
-    mbFinishRequested(false), mbFinished(true), mbStopped(true), mbStopRequested(false)
+    mbFinishRequested(false), mbFinished(true), mbStopped(true), mbStopRequested(false), mpViewerLabel(viewerLabel)
 {
     if(settings){
         newParameterLoader(settings);
@@ -164,7 +164,7 @@ void Viewer::Run()
     mbFinished = false;
     mbStopped = false;
 
-    pangolin::CreateWindowAndBind("ORB-SLAM3: Map Viewer",1024,768);
+    pangolin::CreateWindowAndBind("ORB-SLAM3: Map Viewer " + mpViewerLabel,1024,768);
 
     // 3D Mouse handler requires depth testing to be enabled
     glEnable(GL_DEPTH_TEST);
@@ -173,22 +173,23 @@ void Viewer::Run()
     glEnable (GL_BLEND);
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    pangolin::CreatePanel("menu").SetBounds(0.0,1.0,0.0,pangolin::Attach::Pix(175));
-    pangolin::Var<bool> menuFollowCamera("menu.Follow Camera",false,true);
-    pangolin::Var<bool> menuCamView("menu.Camera View",false,false);
-    pangolin::Var<bool> menuTopView("menu.Top View",false,false);
-    // pangolin::Var<bool> menuSideView("menu.Side View",false,false);
-    pangolin::Var<bool> menuShowPoints("menu.Show Points",true,true);
-    pangolin::Var<bool> menuShowKeyFrames("menu.Show KeyFrames",true,true);
-    pangolin::Var<bool> menuShowGraph("menu.Show Graph",false,true);
-    pangolin::Var<bool> menuShowInertialGraph("menu.Show Inertial Graph",true,true);
-    pangolin::Var<bool> menuLocalizationMode("menu.Localization Mode",false,true);
-    pangolin::Var<bool> menuReset("menu.Reset",false,false);
-    pangolin::Var<bool> menuStop("menu.Stop",false,false);
-    pangolin::Var<bool> menuStepByStep("menu.Step By Step",false,true);  // false, true
-    pangolin::Var<bool> menuStep("menu.Step",false,false);
+    std::string menu_name = "menu" + mpViewerLabel;
+    pangolin::CreatePanel(menu_name).SetBounds(0.0,1.0,0.0,pangolin::Attach::Pix(175));
+    pangolin::Var<bool> menuFollowCamera(menu_name + ".Follow Camera",false,true);
+    pangolin::Var<bool> menuCamView(menu_name + ".Camera View",false,false);
+    pangolin::Var<bool> menuTopView(menu_name + ".Top View",false,false);
+    // pangolin::Var<bool> menuSideView(menu_name + ".Side View",false,false);
+    pangolin::Var<bool> menuShowPoints(menu_name + ".Show Points",true,true);
+    pangolin::Var<bool> menuShowKeyFrames(menu_name + ".Show KeyFrames",true,true);
+    pangolin::Var<bool> menuShowGraph(menu_name + ".Show Graph",false,true);
+    pangolin::Var<bool> menuShowInertialGraph(menu_name + ".Show Inertial Graph",true,true);
+    pangolin::Var<bool> menuLocalizationMode(menu_name + ".Localization Mode",false,true);
+    pangolin::Var<bool> menuReset(menu_name + ".Reset",false,false);
+    pangolin::Var<bool> menuStop(menu_name + ".Stop",false,false);
+    pangolin::Var<bool> menuStepByStep(menu_name + ".Step By Step",false,true);  // false, true
+    pangolin::Var<bool> menuStep(menu_name + ".Step",false,false);
 
-    pangolin::Var<bool> menuShowOptLba("menu.Show LBA opt", false, true);
+    pangolin::Var<bool> menuShowOptLba(menu_name + ".Show LBA opt", false, true);
     // Define Camera Render Object (for view / scene browsing)
     pangolin::OpenGlRenderState s_cam(
                 pangolin::ProjectionMatrix(1024,768,mViewpointF,mViewpointF,512,389,0.1,1000),
@@ -204,7 +205,7 @@ void Viewer::Run()
     Twc.SetIdentity();
     pangolin::OpenGlMatrix Ow; // Oriented with g in the z axis
     Ow.SetIdentity();
-    cv::namedWindow("ORB-SLAM3: Current Frame");
+    cv::namedWindow("ORB-SLAM3: Current Frame" + mpViewerLabel);
 
     bool bFollow = true;
     bool bLocalizationMode = false;
@@ -335,7 +336,7 @@ void Viewer::Run()
             cv::resize(toShow, toShow, cv::Size(width, height));
         }
 
-        cv::imshow("ORB-SLAM3: Current Frame",toShow);
+        cv::imshow("ORB-SLAM3: Current Frame" + mpViewerLabel,toShow);
         cv::waitKey(mT);
 
         if(menuReset)

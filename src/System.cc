@@ -40,7 +40,7 @@ Verbose::eLevel Verbose::th = Verbose::VERBOSITY_NORMAL;
 
 System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
                const bool bUseViewer, const int initFr, const string &strSequence):
-    mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false), mbResetActiveMap(false),
+    mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), altMpViewer(static_cast<Viewer*>(NULL)), mbReset(false), mbResetActiveMap(false),
     mbActivateLocalizationMode(false), mbDeactivateLocalizationMode(false), mbShutDown(false)
 {
     // Output welcome message
@@ -183,12 +183,14 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
     //Create Drawers. These are used by the Viewer
     mpFrameDrawer = new FrameDrawer(mpAtlas);
+    altMpFrameDrawer = new FrameDrawer(mpAtlas);
     mpMapDrawer = new MapDrawer(mpAtlas, strSettingsFile, settings_);
+    altMpMapDrawer = new MapDrawer(mpAtlas, strSettingsFile, settings_);
 
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)
     cout << "Seq. Name: " << strSequence << endl;
-    mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
+    mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer, altMpFrameDrawer, altMpMapDrawer,
                              mpAtlas, mpKeyFrameDatabase, strSettingsFile, mSensor, settings_, strSequence);
 
     //Initialize the Local Mapping thread and launch
@@ -229,11 +231,19 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     if(bUseViewer)
     //if(false) // TODO
     {
-        mpViewer = new Viewer(this, mpFrameDrawer,mpMapDrawer,mpTracker,strSettingsFile,settings_);
+        std::string viewerLabel = " primary";
+        mpViewer = new Viewer(this, mpFrameDrawer,mpMapDrawer,mpTracker,strSettingsFile,settings_, viewerLabel);
         mptViewer = new thread(&Viewer::Run, mpViewer);
         mpTracker->SetViewer(mpViewer);
         mpLoopCloser->mpViewer = mpViewer;
         mpViewer->both = mpFrameDrawer->both;
+
+        std::string viewerLabel2 = " secondary";
+        altMpViewer = new Viewer(this, altMpFrameDrawer,altMpMapDrawer,mpTracker,strSettingsFile,settings_, viewerLabel2);
+        altMptViewer = new thread(&Viewer::Run, altMpViewer);
+        mpTracker->SetAltViewer(altMpViewer);
+        mpLoopCloser->altMpViewer = altMpViewer;
+        altMpViewer->both = altMpFrameDrawer->both;
     }
 
     // Fix verbosity
