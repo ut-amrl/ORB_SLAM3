@@ -180,6 +180,9 @@ void Viewer::Run()
     pangolin::Var<bool> menuTopView(menu_name + ".Top View",false,false);
     // pangolin::Var<bool> menuSideView(menu_name + ".Side View",false,false);
     pangolin::Var<bool> menuShowPoints(menu_name + ".Show Points",true,true);
+    if (mpViewerLabel != " primary") {
+        menuShowPoints = false;
+    }
     pangolin::Var<bool> menuShowKeyFrames(menu_name + ".Show KeyFrames",true,true);
     pangolin::Var<bool> menuShowGraph(menu_name + ".Show Graph",false,true);
     pangolin::Var<bool> menuShowInertialGraph(menu_name + ".Show Inertial Graph",true,true);
@@ -318,26 +321,27 @@ void Viewer::Run()
 
         pangolin::FinishFrame();
 
-        cv::Mat toShow;
-        cv::Mat im = mpFrameDrawer->DrawFrame(trackedImageScale);
+        if (mpViewerLabel == " primary") {
+            cv::Mat toShow;
+            cv::Mat im = mpFrameDrawer->DrawFrame(trackedImageScale);
 
-        if(both){
-            cv::Mat imRight = mpFrameDrawer->DrawRightFrame(trackedImageScale);
-            cv::hconcat(im,imRight,toShow);
-        }
-        else{
-            toShow = im;
-        }
+            if(both){
+                cv::Mat imRight = mpFrameDrawer->DrawRightFrame(trackedImageScale);
+                cv::hconcat(im,imRight,toShow);
+            }
+            else{
+                toShow = im;
+            }
 
-        if(mImageViewerScale != 1.f)
-        {
-            int width = toShow.cols * mImageViewerScale;
-            int height = toShow.rows * mImageViewerScale;
-            cv::resize(toShow, toShow, cv::Size(width, height));
+            if(mImageViewerScale != 1.f)
+            {
+                int width = toShow.cols * mImageViewerScale;
+                int height = toShow.rows * mImageViewerScale;
+                cv::resize(toShow, toShow, cv::Size(width, height));
+            }
+            cv::imshow("ORB-SLAM3: Current Frame" + mpViewerLabel,toShow);
+            cv::waitKey(mT);
         }
-
-        cv::imshow("ORB-SLAM3: Current Frame" + mpViewerLabel,toShow);
-        cv::waitKey(mT);
 
         if(menuReset)
         {
