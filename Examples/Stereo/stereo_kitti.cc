@@ -208,10 +208,10 @@ int main(int argc, char **argv)
         if(ttrack<T)
             usleep((T-ttrack)*1e6);
         if (ni == 0) {
-            sleep(10);
+            sleep(30);
         }
     }
-    sleep(10);
+    sleep(30);
 
     // Stop all threads
     SLAM.Shutdown();
@@ -229,6 +229,7 @@ int main(int argc, char **argv)
 
     // Save camera trajectory
     SLAM.SaveTrajectory("CameraTrajectory.txt");
+    sleep(30);
 
     return 0;
 }

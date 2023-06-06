@@ -175,7 +175,10 @@ void Viewer::Run()
 
     std::string menu_name = "menu" + mpViewerLabel;
     pangolin::CreatePanel(menu_name).SetBounds(0.0,1.0,0.0,pangolin::Attach::Pix(175));
-    pangolin::Var<bool> menuFollowCamera(menu_name + ".Follow Camera",false,true);
+    pangolin::Var<bool> menuFollowCamera(menu_name + ".Follow Camera",true,true);
+    if (mpViewerLabel != " primary") {
+        menuFollowCamera = false;
+    }
     pangolin::Var<bool> menuCamView(menu_name + ".Camera View",false,false);
     pangolin::Var<bool> menuTopView(menu_name + ".Top View",false,false);
     // pangolin::Var<bool> menuSideView(menu_name + ".Side View",false,false);
@@ -208,7 +211,6 @@ void Viewer::Run()
     Twc.SetIdentity();
     pangolin::OpenGlMatrix Ow; // Oriented with g in the z axis
     Ow.SetIdentity();
-    cv::namedWindow("ORB-SLAM3: Current Frame" + mpViewerLabel);
 
     bool bFollow = true;
     bool bLocalizationMode = false;
@@ -322,6 +324,7 @@ void Viewer::Run()
         pangolin::FinishFrame();
 
         if (mpViewerLabel == " primary") {
+            cv::namedWindow("ORB-SLAM3: Current Frame" + mpViewerLabel);
             cv::Mat toShow;
             cv::Mat im = mpFrameDrawer->DrawFrame(trackedImageScale);
 
