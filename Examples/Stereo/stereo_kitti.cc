@@ -208,9 +208,10 @@ int main(int argc, char **argv)
         if(ttrack<T)
             usleep((T-ttrack)*1e6);
         if (ni == 0) {
-            sleep(0);
+            sleep(10);
         }
     }
+    sleep(10);
 
     // Stop all threads
     SLAM.Shutdown();
@@ -227,7 +228,7 @@ int main(int argc, char **argv)
     cout << "mean tracking time: " << totaltime/nImages << endl;
 
     // Save camera trajectory
-    SLAM.SaveTrajectoryKITTI("CameraTrajectory.txt");
+    SLAM.SaveTrajectory("CameraTrajectory.txt");
 
     return 0;
 }

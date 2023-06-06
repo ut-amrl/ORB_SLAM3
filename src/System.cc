@@ -576,6 +576,85 @@ bool System::isShutDown() {
     return mbShutDown;
 }
 
+inline void writeCommaSeparatedStringsLineToFile(
+        const std::vector<std::string> &strings, std::ofstream &file_stream) {
+    for (size_t i = 0; i < strings.size(); i++) {
+        file_stream << strings[i];
+        if (i == (strings.size() - 1)) {
+            file_stream << "\n";
+        } else {
+            file_stream << ", ";
+        }
+    }
+}
+
+void System::SaveTrajectory(const std::string &filename) {
+    cout << endl << "Saving camera trajectory to " << filename << " ..." << endl;
+
+    vector<KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
+    sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
+
+    // Transform all keyframes so that the first keyframe is at the origin.
+    // After a loop closure the first keyframe might not be at the origin.
+    Sophus::SE3f Two = vpKFs[0]->GetPoseInverse();
+
+    std::ofstream f(filename, std::ios::trunc);
+    f << fixed;
+
+    std::vector<std::string> column_labels = {
+        "timestamp", "lost", "transl_x", "transl_y", "transl_z", "quat_x", "quat_y", "quat_z", "quat_w"
+    };
+    writeCommaSeparatedStringsLineToFile(column_labels, f);
+
+    // Frame pose is stored relative to its reference keyframe (which is optimized by BA and pose graph).
+    // We need to get first the keyframe pose and then concatenate the relative transformation.
+    // Frames not localized (tracking failure) are not saved.
+
+    // For each frame we have a reference keyframe (lRit), the timestamp (lT) and a flag
+    // which is true when tracking failed (lbL).
+    list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
+    list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
+    list<bool>::iterator lbL = mpTracker->mlbLost.begin();
+    for(list<Sophus::SE3f>::iterator lit=mpTracker->mlRelativeFramePoses.begin(),
+                lend=mpTracker->mlRelativeFramePoses.end();lit!=lend;lit++, lRit++, lT++, lbL++)
+    {
+        Eigen::Vector3f twc;
+        Eigen::Quaternionf q;
+        if(!(*lbL)) {
+
+            KeyFrame *pKF = *lRit;
+
+            Sophus::SE3f Trw;
+
+            // If the reference keyframe was culled, traverse the spanning tree to get a suitable keyframe.
+            while (pKF->isBad()) {
+                Trw = Trw * pKF->mTcp;
+                pKF = pKF->GetParent();
+            }
+
+            Trw = Trw * pKF->GetPose() * Two;
+
+            Sophus::SE3f Tcw = (*lit) * Trw;
+            Sophus::SE3f Twc = Tcw.inverse();
+
+            twc = Twc.translation();
+            q = Twc.unit_quaternion();
+        }
+
+        writeCommaSeparatedStringsLineToFile(
+                {std::to_string((*lT)),
+        std::to_string((*lbL) ? 1 : 0),
+                 std::to_string(twc(0)),
+                 std::to_string(twc(1)),
+                 std::to_string(twc(2)),
+                 std::to_string(q.x()),
+                 std::to_string(q.y()),
+                 std::to_string(q.z()),
+                 std::to_string(q.w())}, f);
+    }
+    f.close();
+}
+
 void System::SaveTrajectoryTUM(const string &filename)
 {
     cout << endl << "Saving camera trajectory to " << filename << " ..." << endl;
