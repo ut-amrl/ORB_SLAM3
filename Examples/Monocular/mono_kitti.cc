@@ -66,6 +66,7 @@ int main(int argc, char **argv)
     for(int ni=0; ni<nImages; ni++)
     {
         // Read image from file
+        std::cout << "Processing Frame " << ni << std::endl;
         im = cv::imread(vstrImageFilenames[ni],cv::IMREAD_UNCHANGED); //,cv::IMREAD_UNCHANGED);
         double tframe = vTimestamps[ni];
 
@@ -131,8 +132,12 @@ int main(int argc, char **argv)
 
         if(ttrack<T)
             usleep((T-ttrack)*1e6);
+        if (ni == 0) {
+            sleep(30);
+        }
     }
 
+    sleep(30);
     // Stop all threads
     SLAM.Shutdown();
 
@@ -148,7 +153,8 @@ int main(int argc, char **argv)
     cout << "mean tracking time: " << totaltime/nImages << endl;
 
     // Save camera trajectory
-    SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");    
+    SLAM.SaveTrajectory("CameraTrajectory.txt");    
+    sleep(30);
 
     return 0;
 }
