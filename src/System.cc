@@ -571,12 +571,15 @@ bool System::isShutDown() {
 
 void System::MarkNewTrajectoryStart() {
     trajectory_frame_start_idx_ = mpTracker->mlFrameTimes.size();
+    mpTracker->ResetMap();
 }
 
 void System::SaveLatestTrajectoryOVSlam(const std::string &out_file_name) {
     cout << endl << "Saving camera trajectory to " << out_file_name << " ..." << endl;
 
     vector<KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
+    cout << "vector max size: " << vpKFs.max_size();
+    cout << "vector current size: " << vpKFs.size();
     sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
 
     // Transform all keyframes so that the first keyframe is at the origin.

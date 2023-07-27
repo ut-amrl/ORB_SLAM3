@@ -1790,6 +1790,11 @@ void Tracking::ResetFrameIMU()
     // TODO To implement...
 }
 
+void Tracking::ResetMap() {
+    unique_lock<mutex> lock(mMutexImuQueue);
+    mlQueueImuData.clear();
+    CreateMapInAtlas();
+}
 
 void Tracking::Track()
 {
@@ -1820,9 +1825,7 @@ void Tracking::Track()
         if(mLastFrame.mTimeStamp>mCurrentFrame.mTimeStamp)
         {
             cerr << "ERROR: Frame with a timestamp older than previous frame detected!" << endl;
-            unique_lock<mutex> lock(mMutexImuQueue);
-            mlQueueImuData.clear();
-            CreateMapInAtlas();
+            ResetMap();
             return;
         }
         else if(toDoubleInSeconds(mCurrentFrame.mTimeStamp)>toDoubleInSeconds(mLastFrame.mTimeStamp)+1.0)

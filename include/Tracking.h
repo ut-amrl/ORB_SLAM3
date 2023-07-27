@@ -162,6 +162,7 @@ public:
     bool mbOnlyTracking;
 
     void Reset(bool bLocMap = false);
+    void ResetMap();
     void ResetActiveMap(bool bLocMap = false);
 
     float mMeanTrack;
