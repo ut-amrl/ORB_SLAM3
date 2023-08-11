@@ -56,6 +56,12 @@ public:
         ROS_INFO_STREAM("Saving files and starting new trajectory called with args "
                                 << request.trajectory_file_name << ", "
                                 << request.map_file_name);
+        if (!request.map_file_name.empty()) {
+            mpSLAM->SaveAtlas(request.map_file_name, ORB_SLAM3::System::FileType::BINARY_FILE);
+            response.map_file_write_success = true;
+        } else {
+            response.map_file_write_success = true;
+        }
 
         if (!request.trajectory_file_name.empty()) {
             ROS_INFO("Saving trajectory");
@@ -66,12 +72,7 @@ public:
         } else {
             response.traj_write_success = true;
         }
-        if (!request.map_file_name.empty()) {
-            mpSLAM->SaveAtlas(request.map_file_name, ORB_SLAM3::System::FileType::BINARY_FILE);
-            response.map_file_write_success = true;
-        } else {
-            response.map_file_write_success = true;
-        }
+
 
         ROS_INFO("Done saving trajectory (and optional map) file(s)");
         return true;
