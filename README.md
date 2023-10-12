@@ -1,3 +1,41 @@
+# ObVi-SLAM Evaluation
+
+This is the repository for ObVi-SLAM Evaluation.
+
+## Set up ORB-SLAM3
+Here's setup guide for ORB-SLAM3 Evaluation. If you encountered any questions during package installation, refer to the original [ORB-SLAM3 README page](#orb-slam3).
+
+1. Clone the repo using the `--recursive` flag (Skip this step if you're using the [ObVi-SLAM-Evaluation](https://github.com/ut-amrl/ObVi-SLAM-Evaluation) repo.)
+```Bash
+git clone --recursive https://github.com/ut-amrl/ORB_SLAM3/tree/amandaMultisession
+git checkout ObViSLAMEvaluation
+```
+
+2. You can refer to the original [ORB-SLAM3 README page](#orb-slam3) to install dependent packages. Alternatively, you can setup the docker environment and launch the container following instructions [here](https://github.com/ut-amrl/ObVi-SLAM-Evaluation).
+
+3. Compile ORB-SLAM3:
+```Bash
+sh build.sh && sh build_ros.sh
+```
+If you encountered any ROS error, double check you set `ROS_PACKAGE_PATH` correctly. Specifically, you should see path to this ORB-SLAM3 repository after you execute:
+```Bash
+echo $ROS_PACKAGE_PATH
+```
+If you didn't see the ORB-SLAM3 path under `ROS_PACKAGE_PATH`, you may forgot to `source /.dockerenv`. Alternatively, you can run the following to set the environment variable:
+```Bash
+export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:<path_to_orb_slam3_root_dir>
+```
+
+## Run Evaluation
+We provide an convenient script to run the evaluation inside the containter:
+```Bash
+cd /root/ObVi-SLAM-Evaluation/ObVi-SLAM
+bash convenient_scripts/docker/high_res_orbslam3_sequence_executor.sh
+bash convenient_scripts/docker/high_res_orbslam3_metrics_generator.sh
+```
+The `high_res_orbslam3_sequence_executor.sh` file run ORB_SLAM3 on the all bags specified by the sequence file. The `high_res_orbslam3_metrics_generator.sh` script computes metrics for the result. You can modify the data input/output paths accordingly on your machine.
+
+
 # ORB-SLAM3
 
 ### V1.0, December 22th, 2021
