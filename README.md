@@ -7,7 +7,7 @@ Here's setup guide for ORB-SLAM3 Evaluation. If you encountered any questions du
 
 1. Clone the repo using the `--recursive` flag (Skip this step if you're using the [ObVi-SLAM-Evaluation](https://github.com/ut-amrl/ObVi-SLAM-Evaluation) repo.)
 ```Bash
-git clone --recursive https://github.com/ut-amrl/ORB_SLAM3/tree/amandaMultisession
+git clone --recursive https://github.com/ut-amrl/ORB_SLAM3/git
 git checkout ObViSLAMEvaluation
 ```
 
