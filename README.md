@@ -30,8 +30,8 @@ export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:<path_to_orb_slam3_root_dir>
 We provide an convenient script to run the evaluation inside the containter:
 ```Bash
 cd /root/ObVi-SLAM-Evaluation/ObVi-SLAM
-bash convenient_scripts/docker/high_res_orbslam3_sequence_executor.sh
-bash convenient_scripts/docker/high_res_orbslam3_metrics_generator.sh
+bash convenience_scripts/docker/high_res_orbslam3_sequence_executor.sh
+bash convenience_scripts/docker/high_res_orbslam3_metrics_generator.sh
 ```
 The `high_res_orbslam3_sequence_executor.sh` file run ORB_SLAM3 on the all bags specified by the sequence file. The `high_res_orbslam3_metrics_generator.sh` script computes metrics for the result. You can modify the data input/output paths accordingly on your machine.
 
