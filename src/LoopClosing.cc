@@ -1015,7 +1015,7 @@ int LoopClosing::FindMatchesByProjection(KeyFrame* pCurrentKF,
 }
 
 void LoopClosing::CorrectLoop() {
-  // cout << "Loop detected!" << endl;
+  cout << "\033[32m" << "Loop detected!" << "\033[0m" << endl;
 
   // Send a stop signal to Local Mapping
   // Avoid new keyframes are inserted while correcting the loop

@@ -296,7 +296,6 @@ void Sim3Solver::ComputeSim3(Eigen::Matrix3f &P1, Eigen::Matrix3f &P2) {
   // Horn 1987, Closed-form solution of absolute orientataion using unit quaternions
 
   // Step 1: Centroid and relative coordinates
-
   Eigen::Matrix3f Pr1;  // Relative coordinates to centroid (set 1)
   Eigen::Matrix3f Pr2;  // Relative coordinates to centroid (set 2)
   Eigen::Vector3f O1;   // Centroid of P1
@@ -306,7 +305,6 @@ void Sim3Solver::ComputeSim3(Eigen::Matrix3f &P1, Eigen::Matrix3f &P2) {
   ComputeCentroid(P2, Pr2, O2);
 
   // Step 2: Compute M matrix
-
   Eigen::Matrix3f M = Pr2 * Pr1.transpose();
 
   // Step 3: Compute N matrix
@@ -325,28 +323,32 @@ void Sim3Solver::ComputeSim3(Eigen::Matrix3f &P1, Eigen::Matrix3f &P2) {
   N34 = M(1, 2) + M(2, 1);
   N44 = -M(0, 0) - M(1, 1) + M(2, 2);
 
-  N << N11, N12, N13, N14, N12, N22, N23, N24, N13, N23, N33, N34, N14, N24, N34, N44;
+  // clang-format off
+  N << N11, N12, N13, N14,
+       N12, N22, N23, N24,
+       N13, N23, N33, N34,
+       N14, N24, N34, N44;
+  // clang-format on
 
   // Step 4: Eigenvector of the highest eigenvalue
   Eigen::EigenSolver<Eigen::Matrix4f> eigSolver;
   eigSolver.compute(N);
 
   Eigen::Vector4f eval = eigSolver.eigenvalues().real();
-  Eigen::Matrix4f evec =
-      eigSolver.eigenvectors()
-          .real();  // evec[0] is the quaternion of the desired rotation
+  // evec[0] is the quaternion of the desired rotation
+  Eigen::Matrix4f evec = eigSolver.eigenvectors().real();
 
   int maxIndex;  // should be zero
   eval.maxCoeff(&maxIndex);
 
-  Eigen::Vector3f vec = evec.block<3, 1>(
-      1, maxIndex);  // extract imaginary part of the quaternion (sin*axis)
+  // extract imaginary part of the quaternion (sin*axis)
+  Eigen::Vector3f vec = evec.block<3, 1>(1, maxIndex);
 
   // Rotation angle. sin is the norm of the imaginary part, cos is the real part
   double ang = atan2(vec.norm(), evec(0, maxIndex));
 
-  vec = 2 * ang * vec /
-        vec.norm();  // Angle-axis representation. quaternion angle is the half
+  // Angle-axis representation. quaternion angle is the half
+  vec = 2 * ang * vec / vec.norm();
   mR12i = Sophus::SO3f::exp(vec).matrix();
 
   // Step 5: Rotate set 2

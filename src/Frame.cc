@@ -388,6 +388,7 @@ Frame::Frame(const cv::Mat &imGray,
   AssignFeaturesToGrid();
 }
 
+// Constructor for Monocular cameras.
 Frame::Frame(const cv::Mat &imGray,
              const double &timeStamp,
              ORBextractor *extractor,
