@@ -140,6 +140,9 @@ endif()
 # Stereo examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Stereo)
 
+add_executable(stereo_coda Examples/Stereo/stereo_coda.cc)
+target_link_libraries(stereo_coda ${PROJECT_NAME})
+
 add_executable(stereo_kitti Examples/Stereo/stereo_kitti.cc)
 target_link_libraries(stereo_kitti ${PROJECT_NAME})
 
@@ -159,6 +162,9 @@ endif()
 
 # Monocular examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular)
+
+add_executable(mono_coda Examples/Monocular/mono_coda.cc)
+target_link_libraries(mono_coda ${PROJECT_NAME})
 
 add_executable(mono_tum Examples/Monocular/mono_tum.cc)
 target_link_libraries(mono_tum ${PROJECT_NAME})
