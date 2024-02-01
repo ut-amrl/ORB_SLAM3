@@ -117,7 +117,7 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
 
     bool solve(const SparseBlockMatrix<MatrixType>& A, double* x, double* b)
     {
-      printf("LinearSolverEigen::solve() A:%dx%d\n", A.rows(), A.cols());
+      //printf("LinearSolverEigen::solve() A:%dx%d\n", A.rows(), A.cols());
       SaveProblem(A, b);
       if (_init)
         _sparseMatrix.resize(A.rows(), A.cols());
