@@ -17,15 +17,18 @@ voc_file=$project_dir/ORB_SLAM3/Vocabulary/ORBvoc.txt
 img_dir=$dataset_dir/2d_raw
 time_dir=$dataset_dir/timestamps
 
+out_dir=$project_dir/benchmark/trajectories/CODa/$seq/ORB_SLAM3
+mkdir -p $out_dir
+
 for (( trial=1; trial<=$num_trial; trial++ ))
 do
   # Configuration and output file setup based on mode
   if [ "$mode" == "stereo" ]; then
-    config_file=$project_dir/ORB_SLAM3/Examples/Stereo/configs/CODa-01.yaml
+    config_file=$project_dir/ORB_SLAM3/Examples/Stereo/configs/CODa.yaml
     exec_file=$project_dir/ORB_SLAM3/Examples/Stereo/stereo_coda
     out_file=dataset-CODa$(printf "%02d" $seq)-stereo_$trial
   elif [ "$mode" == "mono" ]; then
-    config_file=$project_dir/ORB_SLAM3/Examples/Monocular/configs/CODa-01.yaml
+    config_file=$project_dir/ORB_SLAM3/Examples/Monocular/configs/CODa.yaml
     exec_file=$project_dir/ORB_SLAM3/Examples/Monocular/mono_coda
     out_file=dataset-CODa$(printf "%02d" $seq)-mono_$trial
   else
@@ -38,8 +41,7 @@ do
   echo "Executing trial $trial..."
   $exec_file $voc_file $config_file $img_dir $time_dir $seq $out_file
 
-  mv f_$out_file.txt $project_dir/benchmark/trajectories/CODa/ORB_SLAM3/
-  mv lost_$out_file.txt $project_dir/benchmark/trajectories/CODa/ORB_SLAM3/
+  mv f_$out_file.txt $out_dir && mv lost_$out_file.txt $out_dir
   echo "Output for trial $trial moved to: $project_dir/benchmark/trajectories/CODa/ORB_SLAM3"
 done
 
