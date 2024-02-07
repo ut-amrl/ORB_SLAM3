@@ -170,13 +170,14 @@ int main(int argc, char **argv) {
 
   // Save camera trajectory
   if (bFileName) {
-    // const string kf_file = "kf_" + string(argv[argc - 1]) + ".txt";
     const string f_file = "f_" + string(argv[argc - 1]) + ".txt";
+    const string lost_file = "lost_" + string(argv[argc - 1]) + ".txt";
     SLAM.SaveTrajectoryCODa(f_file);
+    SLAM.SaveLostFrames(lost_file);
     // SLAM.SaveKeyFrameTrajectoryEuRoC(kf_file);
   } else {
     SLAM.SaveTrajectoryCODa("CameraTrajectory.txt");
-    // SLAM.SaveKeyFrameTrajectoryEuRoC("KeyFrameTrajectory.txt");
+    SLAM.SaveLostFrames("LostFrames.txt");
   }
 
   return 0;

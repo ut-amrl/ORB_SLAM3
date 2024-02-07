@@ -558,6 +558,26 @@ bool System::isShutDown() {
   return mbShutDown;
 }
 
+void System::SaveLostFrames(const string& filename) {
+  cout << "Saving lost frames to " << filename << " ..." << endl;
+
+  ofstream f;
+  f.open(filename.c_str());
+  f << fixed;
+
+  list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
+  for (list<bool>::iterator lbL = mpTracker->mlbLost.begin(),
+                            lend = mpTracker->mlbLost.end();
+       lbL != lend;
+       lbL++, lT++) {
+    if (*lbL) {
+      f << setprecision(6) << *lT << endl;
+    }
+  }
+
+  f.close();
+}
+
 void System::SaveTrajectoryTUM(const string& filename) {
   cout << endl << "Saving camera trajectory to " << filename << " ..." << endl;
   if (mSensor == MONOCULAR) {
@@ -997,8 +1017,8 @@ void System::SaveTrajectoryCODa(const string& filename) {
             lend = mpTracker->mlRelativeFramePoses.end();
        lit != lend;
        lit++, lRit++, lT++, lbL++) {
-    // cout << "1" << endl;
-    if (*lbL) continue;
+    // NOTE: we save all the frames, even if they are lost
+    // if (*lbL) continue;
 
     KeyFrame* pKF = *lRit;
 
@@ -1041,7 +1061,6 @@ void System::SaveTrajectoryCODa(const string& filename) {
   f.close();
   cout << endl << "End of saving trajectory to " << filename << " ..." << endl;
 }
-
 
 void System::SaveTrajectoryKITTI(const string& filename) {
   cout << endl << "Saving camera trajectory to " << filename << " ..." << endl;

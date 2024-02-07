@@ -146,6 +146,9 @@ class System {
   void Shutdown();
   bool isShutDown();
 
+  // Save the timestamps of the lost frames
+  void SaveLostFrames(const string& filename);
+
   // Save camera trajectory in the TUM RGB-D dataset format.
   // Only for stereo and RGB-D. This method does not work for monocular.
   // Call first Shutdown()
